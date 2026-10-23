@@ -8,8 +8,9 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | --- | --- |
 | Planning steps 1 to 6 | Done. Decisions and milestones in `docs/PLAN.md` |
 | Repo setup | Done. `tools/` from GBA v1.6 (`1d99c2e`), `tests/check_map.py` (20 checks) |
-| M1. Foundations | Built and tested here. Waits for the owner: turn on Pages, then device checklist 1 |
-| M2. Art pipeline | Next |
+| M1. Foundations | Built; CI green. Waits for the owner: turn on Pages, then device checklist 1 |
+| M2. Art pipeline | Built. Waits for the owner: pick the squishy size (gallery page 1) |
+| M3. Music and sound | Next |
 
 ## Owner notes
 
@@ -73,6 +74,35 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 Scores: rules port 9 (byte-exact against C), tap test 8.5 (first pass
 sparkles 6: pastel on pastel; now a dark pink edge), storage 8.5 (device
 check pending).
+
+## M2 progress
+
+1. **Exporter** `tools/export_web.py` (about 22 s): the GBA art functions
+   as RGBA PNG. 929 sprites on 3 atlas pages of 1024 x 1024 (shelf packed,
+   1 px gap): every squishy in 5 flavors at 16 (idle, squish), 32 (idle,
+   open) and 64 px (idle, blink, open, squish) in the ROM look, the
+   silhouettes in each shelf row's tint, 80 gifts, 64 px containers (body,
+   open, lid) and 16 px map containers in each area's 5 colors, Pip, Momo,
+   the UI, confetti, snacks, the logo letters with their positions. 13
+   screens (title, close-up, open, letter back and card, 4 shelf pages, 4
+   rooms). 4 maps: ground, overlay and a glint mask, plus the area data in
+   `art.json` (collision as a 0/1 string, spawn, spots, pen, sign, signs,
+   doors, exits, gates, mailbox, basket, Momo's bed, the glint's 4 colors).
+   The 5x7 font (plus `(`, `)` and `_`, which the GBA never printed),
+   names, layout numbers (shelf, room, meter, count pill, Pip's feet
+   row). `music.json` from `music.py` for M3. 508 KB in all.
+2. **Loader** `src/engine/art.ts`: atlases, screens and maps by path,
+   `draw(name, x, y, {flipX, sx, sy})`, `text()` and `textWidth()` in the
+   pixel font.
+3. **Gallery** `?gallery` (`src/scenes/gallery.ts`): 26 pages; page 1 is
+   the squishy size on the map (16 px as on the GBA, against 32 px, with
+   Apple's 44-point touch ring). Tap the right side for the next page.
+   `tests/e2e/gallery.spec.ts` walks every page with no error (`SHOTS=dir`
+   saves screenshots).
+
+Score: art export 8.5 (first pass 8: the font had no `(`, `)`, `_`).
+Not done in M2: the `check_text.py` port moves to M4, when the game's
+strings move to TypeScript.
 
 ## Commands
 

@@ -6,6 +6,7 @@ import { Game } from './game';
 import { Screen } from './engine/screen';
 import { logLines, setLogEcho } from './engine/log';
 import { TapTest } from './scenes/taptest';
+import { Gallery } from './scenes/gallery';
 import { isIOS, showInstallHint } from './shell/install-hint';
 import { standalone } from './scenes/taptest';
 import { encodeSave } from './rules/save-data';
@@ -30,7 +31,9 @@ declare global {
   }
 }
 
-void game.boot(() => new TapTest(game)).then(() => {
+const first = params.has('gallery') ? () => new Gallery(game) : () => new TapTest(game);
+
+void game.boot(first).then(() => {
   if (!testMode) return;
   window.__squishy = {
     ready: true,
@@ -40,6 +43,9 @@ void game.boot(() => new TapTest(game)).then(() => {
     save: () => ({ ...game.collection.s, bytes: Array.from(encodeSave(game.collection.s)) }),
     view: () => ({ ...screen.view }),
     scene: () => game.scenes.current?.name,
+    page: () => (game.scenes.current as Gallery | null)?.page,
+    pages: () => (game.scenes.current as Gallery | null)?.pages?.map((p) => p.title),
+    artLoaded: (path: string) => game.art.cached(path) !== undefined,
     fading: () => game.scenes.fading(),
     sparkles: () => game.sparkles.count(),
     storage: () => ({ ...game.chip.report }),

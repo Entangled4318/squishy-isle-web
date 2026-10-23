@@ -54,6 +54,17 @@ the tap test shows most of the answers.
 17. Leave the home screen app unopened for 8 or more days, then open it.
     Note if the count is still there.
 
-## Checklists 2 and later
+## Checklist 2 (milestone 2: the art gallery)
 
-Added at the end of milestones 2 to 7.
+Address: https://entangled4318.github.io/squishy-isle-web/?gallery
+
+1. Page 1 shows the meadow with Pip. On the left, four friends at 16 px
+   (the GBA size). On the right, four at 32 px. The rings show Apple's
+   smallest touch target (44 points). Pick the size for the map: 16, 32,
+   or "between" (24 px, which needs new face art).
+2. Tap the right side of the screen to go through all 26 pages. Note any
+   art that looks wrong, blurry or cut off on the device.
+
+## Checklists 3 and later
+
+Added at the end of milestones 3 to 7.

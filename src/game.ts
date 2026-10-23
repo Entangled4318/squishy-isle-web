@@ -10,6 +10,7 @@ import { Screen } from './engine/screen';
 import { Sound } from './engine/audio';
 import { Sparkles } from './engine/sparkles';
 import { BrowserChip } from './shell/storage';
+import { Art } from './engine/art';
 
 export const BUILD = __BUILD__;
 
@@ -19,6 +20,7 @@ export class Game {
   readonly sound = new Sound();
   readonly scenes = new Scenes();
   readonly sparkles = new Sparkles();
+  readonly art = new Art();
   readonly collection = new Collection(() => this.writeSave());
   store!: SaveStore;
   chip!: BrowserChip;
@@ -39,7 +41,8 @@ export class Game {
   }
 
   async boot(first: () => Scene): Promise<void> {
-    this.chip = await BrowserChip.open();
+    const [chip] = await Promise.all([BrowserChip.open(), this.art.load()]);
+    this.chip = chip;
     this.store = new SaveStore(this.chip);
     const c = this.collection;
     const { status, data } = this.store.load();

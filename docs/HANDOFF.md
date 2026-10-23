@@ -13,7 +13,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
   default (ask before the switch: it replaces a working page).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
 - Owner approved the M4 sub-steps below and said: proceed with all
-  sub-steps unless you need me. Next: sub-step 4, containers and reveal. Stop after each sub-step with a short report.
+  sub-steps unless you need me. Next: sub-step 5, followers and the pen. Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
   iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
@@ -30,7 +30,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 3. Pip moves: tap to walk by the shortest path, drag to steer, the
    movement assist, the hop. Owner added: Momo asleep at the gate. Done.
 4. Containers and reveal: containers on the map, the guide arrow, the open
-   screen, the reveal, the counter pill, a save at each reveal.
+   screen, the reveal, the counter pill, a save at each reveal. Done.
 5. Followers and the pen: the follower line, the pen, the poke.
 6. Shelf and close-up: shelf pages, close-up, the home button, the other
    save moments.
@@ -47,7 +47,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
 | M2. Art pipeline | Built. Owner picked 16 px for the map |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
-| M4. Core loop in the meadow | Sub-steps 1 to 3 of 7 done (title, map and camera, Pip moves), on branch `claude/magical-euler-0drmuw` |
+| M4. Core loop in the meadow | Sub-steps 1 to 4 of 7 done (title, map, moves, containers and reveal), on branch `claude/magical-euler-0drmuw` |
 
 ## Owner notes
 
@@ -265,6 +265,43 @@ too, or the block is an invisible wall.
 Score: movement 8.5 (first pass 8.5; two test expectations were wrong,
 not the game: the walk round a wall end, and Pip stops beside Momo, not
 west of the gate). To judge on a device: walk speed and the drag feel.
+
+9. **Containers** (in `meadow.ts`): 3 boxes at the area's spots (GBA
+   `choose_spot`: away from Pip, off screen if possible; the first box of
+   a game in view by the cottage), 5 colors with no two alike, a hop
+   every few seconds, a gold twinkle walking round each, 90 frames before
+   an opened box comes back elsewhere. Boxes block Pip. A tap on a box (or
+   near it) walks Pip to it and it opens when he touches it (6 px); a tap
+   while touching opens at once. The guide arrow shows after 5 s without
+   an open, points from Pip at the nearest box, blinks; a tap on it walks
+   to that box. The counter pill (area icon, "n/20") sits top right inside
+   the safe area and hops twice when the count went up since the last
+   visit. Random numbers come from the save (`collection.rand()`), as the
+   GBA used `game_rand()`.
+10. **Open screen** `src/scenes/open.ts` (GBA `open.c`): a tap anywhere is
+    one press (14-frame cool-down); two jumps with rising chimes and a
+    boing, the third pops the lid (spinning, flying), a ring of sparkles
+    and puffs, the pop and the ta-da jingle. The friend is added (and the
+    save written) at the pop. With no tap it presses itself after 4 s,
+    then every 70 frames. The GBA's big A button is left out; the three
+    hearts fill and the next one bobs. `art.drawAffine()` does the GBA
+    rotate and scale (1/256 turn).
+11. **Reveal and close-up** `src/scenes/closeup.ts` (GBA `closeup.c`): the
+    friend drops in, lands with a squeak, the reveal song, confetti (from
+    the save's random numbers) and a star ring. Taps after 20 frames
+    squish (3 at most); after 3 squishes or 5 s it hops away to the map.
+    Close-up mode is built for sub-step 6 (tap the friend to squish, tap
+    away to go back, the 3-in-a-row rule). The name shows in the pill.
+    `drawFixed()` takes a row from which the side bands stretch the edge
+    column instead of mirroring (no half pills at the screen edges).
+12. **Tests** `tests/e2e/boxes.spec.ts` (4 a device): the whole loop with
+    3 taps and 3 squishes, the save and the respawn; the self-opening box
+    and the friend leaving by itself; the arrow and a tap on it; 60 taps
+    on the open screen pop it once. 165 unit and 56 play checks pass.
+
+Score: containers and reveal 8.5 (first pass 8: the arrow blinked per
+browser frame, so twice as fast on a 120 Hz iPad; the reveal's side
+bands showed half name pills; the open hearts touched).
 
 ## Commands
 

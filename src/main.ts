@@ -10,6 +10,8 @@ import { Gallery } from './scenes/gallery';
 import { SoundTest } from './scenes/soundtest';
 import { Title } from './scenes/title';
 import { Meadow } from './scenes/meadow';
+import { Open } from './scenes/open';
+import { Closeup } from './scenes/closeup';
 import { isIOS, showInstallHint } from './shell/install-hint';
 import { standalone } from './scenes/taptest';
 import { encodeSave } from './rules/save-data';
@@ -35,6 +37,9 @@ declare global {
 }
 
 const meadow = new Meadow(game);
+const closeup = new Closeup(game, () => meadow);
+const open = new Open(game, () => meadow.open, () => closeup.show(meadow.open.friend, true), () => meadow);
+meadow.openScene = () => open;
 const title = (): Title => new Title(game, () => meadow, () => meadow.reset());
 /* ?title is the game (M4). The tap test stays the default page until the
  * owner has done device checklist 1 and agrees to the switch. */
@@ -71,5 +76,8 @@ void game.boot(first).then(() => {
     goMeadow: () => game.scenes.go(meadow),
     walk: () => ({ path: meadow.path.length, dir: meadow.dir, walking: meadow.walkT > 0 }),
     blocked: (x: number, y: number) => meadow.blocked(x, y),
+    boxes: () => meadow.boxes.map((b) => (b.spot < 0 ? null : meadow.A.spots[b.spot])),
+    arrow: () => meadow.arrowBox,
+    stage: () => ({ popT: open.popT, landed: closeup.landedT, squishes: closeup.squishes, leave: closeup.leaveT }),
   };
 });

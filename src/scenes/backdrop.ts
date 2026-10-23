@@ -11,7 +11,15 @@ export const FIXED_W = 240;
 export const FIXED_H = 160;
 
 /** Draws `img` as a fixed screen, then calls draw() in its pixel space. */
-export function drawFixed(game: Game, ctx: CanvasRenderingContext2D, img: HTMLImageElement | undefined, draw: () => void): FixedLayout {
+export function drawFixed(
+  game: Game,
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement | undefined,
+  draw: () => void,
+  /** rows from here down repeat the edge column instead of the mirror
+   * (a name pill near the bottom would show half pills at the edges) */
+  mirrorRows = FIXED_H,
+): FixedLayout {
   const v = game.screen.view;
   const f = fixedLayout(v, FIXED_W, FIXED_H);
   const W = FIXED_W, H = FIXED_H;
@@ -19,10 +27,16 @@ export function drawFixed(game: Game, ctx: CanvasRenderingContext2D, img: HTMLIm
   ctx.imageSmoothingEnabled = false;
   if (img) {
     if (f.ox > 0) {
+      const m = mirrorRows;
       ctx.setTransform(-f.k, 0, 0, f.k, f.ox, f.oy);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, W, m, 0, 0, W, m);
       ctx.setTransform(-f.k, 0, 0, f.k, x1 + W * f.k, f.oy);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, W, m, 0, 0, W, m);
+      if (m < H) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(img, 0, m, 1, H - m, 0, f.oy + m * f.k, f.ox, (H - m) * f.k);
+        ctx.drawImage(img, W - 1, m, 1, H - m, x1, f.oy + m * f.k, v.devW - x1, (H - m) * f.k);
+      }
     }
     ctx.setTransform(f.k, 0, 0, f.k, f.ox, f.oy);
     ctx.drawImage(img, 0, 0);

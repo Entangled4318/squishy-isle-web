@@ -21,7 +21,8 @@ import { dbg } from '../engine/log';
 import { SONG } from '../engine/audio';
 import type { AreaData } from '../engine/art';
 import { findPath, Grid } from './path';
-import { idiv } from '../engine/gba';
+import { Closeup } from './closeup';
+import { idiv, isin } from '../engine/gba';
 
 const FEET_W = 5; /* half width of Pip's feet box */
 const FEET_H = 5;
@@ -36,7 +37,44 @@ const POS_SAVE_WAIT = 60; /* save the position after Pip stands still this long 
 const TOUCH_PT = 32; /* tap zone radius in points (64-point zones) */
 const RETARGET = 6; /* frames between new paths while a finger drags */
 const STUCK = 20; /* frames without progress before a walk gives up */
+const MAX_BOXES = 3;
+const BOX_COLORS = 5;
+const ARROW_DELAY = 5 * 60; /* frames without an open before the arrow shows */
+const ARROW_R = 26; /* px from Pip's middle to the arrow's middle */
+const ARROW_BLINK = 60; /* frames on, then the same off */
+const RESPAWN = 90; /* frames before a new box replaces an opened one */
+const TOUCH = 6; /* px around a box that count as touching */
+const COUNT_TEXT_X = 18; /* the count's 32 px text box starts here in the pill */
+const TWINKLE_AROUND: [number, number][] = [
+  [-10, -15],
+  [8, -18],
+  [10, -6],
+  [-3, -22],
+  [-12, -4],
+  [4, -12],
+];
+
+interface Box {
+  /** index into the area's spots, -1 = empty */
+  spot: number;
+  color: number;
+  /** frames until an empty slot gets a new box */
+  wait: number;
+  /** animation offset */
+  phase: number;
+}
+
+/** What the open and reveal screens need from the meadow. */
+export interface OpenInfo {
+  area: number;
+  color: number;
+  /** the friend inside, or -1 when the area is full */
+  friend: number;
+}
+
 const hopH = (t: number) => (t >= 0 && t < HOP_LEN ? idiv(t * (HOP_LEN - t), 10) : 0); /* up to 6 px */
+
+type Thing = 'pip' | 'momo' | 'box' | 'arrow';
 
 export const enum Dir {
   Down,
@@ -79,6 +117,21 @@ export class Meadow implements Scene {
   private momoPoke = -1;
   private momoGate = -1;
   private step = { x: 0, y: 0, t: 0, sx: 0, sy: 0 };
+  boxes: Box[] = [];
+  private boxesArea = -1;
+  private seekT = 0;
+  arrowBox = -1;
+  private arrowT = 0;
+  touchBox = -1;
+  /** the box a tap chose: it opens when Pip arrives */
+  pendingBox = -1;
+  private countLast = [0, 0, 0, 0];
+  private countSeen = 0;
+  private countHop = 0;
+  /** set when a box opens, for the open and reveal screens */
+  open: OpenInfo = { area: 0, color: 0, friend: -1 };
+  /** the open screen (set by main.ts) */
+  openScene: (() => Scene) | null = null;
   camX = 0;
   camY = 0;
   private glint: HTMLCanvasElement[] = [];
@@ -99,6 +152,9 @@ export class Meadow implements Scene {
     this.dir = Dir.Down;
     this.path = [];
     this.goal = null;
+    this.boxesArea = -1;
+    this.seekT = 0;
+    this.arrowBox = this.touchBox = this.pendingBox = -1;
     this.posRestored = true;
   }
 
@@ -118,6 +174,18 @@ export class Meadow implements Scene {
     this.pipHop = 0;
     this.momoPoke = -1;
     this.step.t = 0;
+    this.pendingBox = -1;
+    Closeup.resetStreak(); /* GBA 9.3: back on the map, the close-up count starts again */
+    const n = g.collection.foundInArea(A.index);
+    if (this.countSeen & (1 << A.index) && n > this.countLast[A.index]) this.countHop = 40; /* not when the area changes */
+    this.countLast[A.index] = n;
+    this.countSeen |= 1 << A.index;
+    if (this.boxesArea !== A.index) {
+      this.boxes = Array.from({ length: MAX_BOXES }, () => ({ spot: -1, color: 0, wait: 0, phase: 0 }));
+      this.boxesArea = A.index;
+    }
+    this.updateCamera();
+    this.boxesFill();
     g.sound.music(AREA_SONG[A.index] ?? SONG.meadow);
     this.updateCamera();
     dbg(`scene meadow pip=${this.pipX},${this.pipY} area=${A.index} cam=${this.camX},${this.camY}`);
@@ -146,9 +214,158 @@ export class Meadow implements Scene {
     return false;
   }
 
-  /** Everything that stops a step. Containers join in sub-step 4. */
+  /** Everything that stops a step: the map, Momo and the boxes. */
   blocked(fx: number, fy: number): boolean {
-    return this.mapBlocked(fx, fy);
+    if (this.mapBlocked(fx, fy)) return true;
+    for (let i = 0; i < MAX_BOXES; i++) if (this.boxHit(i, fx - FEET_W, fy - FEET_H, fx + FEET_W, fy)) return true;
+    return false;
+  }
+
+  /* ---- boxes (GBA gift boxes; acorns, shells, capsules in later areas) ---- */
+
+  private spotXY(sp: number): [number, number] {
+    return this.A.spots[sp];
+  }
+
+  /** box footprint: 14 px wide, 6 px deep at its base */
+  private boxHit(i: number, x0: number, y0: number, x1: number, y1: number): boolean {
+    const b = this.boxes[i];
+    if (!b || b.spot < 0) return false;
+    const [bx, by] = this.spotXY(b.spot);
+    return x1 >= bx - 7 && x0 <= bx + 7 && y1 >= by - 6 && y0 <= by;
+  }
+
+  private boxesWanted(): number {
+    return Math.min(20 - this.game.collection.foundInArea(this.A.index), MAX_BOXES);
+  }
+
+  private boxesOut(): number {
+    return this.boxes.filter((b) => b.spot >= 0).length;
+  }
+
+  /** A free spot away from Pip, off screen if it can be, so boxes do not pop
+   * up under the child's nose. The very first box of a game sits in view
+   * near the cottage. */
+  private chooseSpot(): number {
+    const c = this.game.collection;
+    const v = this.game.screen.view;
+    const A = this.A;
+    const used = (sp: number) => this.boxes.some((b) => b.spot === sp);
+    if (c.foundInArea(A.index) === 0 && this.boxesOut() === 0 && !used(A.firstSpot)) return A.firstSpot;
+    let best = -1, bestScore = -1;
+    A.spots.forEach(([x, y], sp) => {
+      if (used(sp)) return;
+      const dx = x - this.pipX, dy = y - this.pipY;
+      if (dx * dx + dy * dy < 48 * 48) return;
+      const onScreen = x >= this.camX - 8 && x < this.camX + v.w + 8 && y >= this.camY && y < this.camY + v.h + 16;
+      const score = (onScreen ? 0 : 100) + (c.rand() % 64);
+      if (score > bestScore) [bestScore, best] = [score, sp];
+    });
+    return best;
+  }
+
+  private placeBox(i: number): void {
+    const c = this.game.collection;
+    const sp = this.chooseSpot();
+    if (sp < 0) return;
+    let color = c.rand() % BOX_COLORS;
+    for (let k = 0; k < BOX_COLORS && this.boxes.some((b) => b.spot >= 0 && b.color === color); k++) color = (color + 1) % BOX_COLORS;
+    this.boxes[i] = { spot: sp, color, wait: 0, phase: c.rand() & 255 };
+    const [x, y] = this.spotXY(sp);
+    dbg(`box ${i} at ${x},${y} color ${color}`);
+  }
+
+  private boxesFill(): void {
+    for (let i = 0; i < MAX_BOXES && this.boxesOut() < this.boxesWanted(); i++)
+      if (this.boxes[i].spot < 0 && this.boxes[i].wait === 0) this.placeBox(i);
+  }
+
+  private openBox(i: number): void {
+    const g = this.game;
+    const c = g.collection;
+    const b = this.boxes[i];
+    this.open = { area: this.A.index, color: b.color, friend: c.roll(this.A.index, g.frame) };
+    b.spot = -1;
+    b.wait = RESPAWN;
+    this.touchBox = this.arrowBox = this.pendingBox = -1;
+    this.seekT = 0;
+    this.path = [];
+    this.goal = null;
+    g.sound.chime(3);
+    dbg(`box ${i} open friend ${this.open.friend} pip=${this.pipX},${this.pipY}`);
+    this.posDirty = true;
+    this.savePos(true);
+    if (this.openScene) g.scenes.go(this.openScene());
+  }
+
+  private updateBoxes(): void {
+    for (const b of this.boxes) if (b.spot < 0 && b.wait > 0) b.wait--;
+    this.boxesFill();
+    const was = this.touchBox;
+    this.touchBox = -1;
+    const px = this.pipX, py = this.pipY;
+    for (let i = 0; i < MAX_BOXES; i++) if (this.boxHit(i, px - FEET_W - TOUCH, py - FEET_H - TOUCH, px + FEET_W + TOUCH, py + TOUCH)) this.touchBox = i;
+    if (this.touchBox >= 0 && this.touchBox !== was) dbg(`touch box ${this.touchBox} pip=${px},${py}`);
+    if (this.seekT < ARROW_DELAY) this.seekT++;
+    else {
+      /* the arrow always points at the nearest box */
+      let best = Infinity, near = -1;
+      this.boxes.forEach((b, i) => {
+        if (b.spot < 0) return;
+        const [x, y] = this.spotXY(b.spot);
+        const d = (x - px) ** 2 + (y - py) ** 2;
+        if (d < best) [best, near] = [d, i];
+      });
+      if (near !== this.arrowBox) {
+        if (this.arrowBox < 0 && near >= 0) this.arrowT = 0;
+        this.arrowBox = near;
+        dbg(`arrow on box ${near}`);
+      }
+    }
+    if (this.arrowBox >= 0) this.arrowT++;
+    if (this.pendingBox >= 0) {
+      if (this.boxes[this.pendingBox].spot < 0) this.pendingBox = -1;
+      else if (this.touchBox === this.pendingBox && !this.game.scenes.fading()) this.openBox(this.pendingBox);
+      else if (!this.path.length && this.walkT === 0 && this.stuckT === 0 && this.touchBox !== this.pendingBox) {
+        /* the walk ended short of the box (it could not reach it): forget it */
+        dbg(`box ${this.pendingBox} out of reach`);
+        this.pendingBox = -1;
+      }
+    }
+  }
+
+  /** Walks to box i; it opens when Pip arrives (at once if he is touching it). */
+  private goToBox(i: number): void {
+    this.pendingBox = i;
+    if (this.touchBox === i) return;
+    const [x, y] = this.spotXY(this.boxes[i].spot);
+    this.walkTo(x, y + 8);
+  }
+
+  /** The arrow's middle on screen, or null when it does not show. */
+  private arrowAt(): { x: number; y: number; tile: string; flipX: boolean; flipY: boolean } | null {
+    const i = this.arrowBox;
+    if (i < 0 || this.boxes[i].spot < 0 || this.touchBox >= 0) return null;
+    const pcx = this.pipX - this.camX, pcy = this.pipY - this.camY - 12;
+    const [bx, by] = this.spotXY(this.boxes[i].spot);
+    const dx = bx - this.camX - pcx, dy = by - this.camY - 8 - pcy;
+    const len = Math.floor(Math.sqrt(dx * dx + dy * dy));
+    if (len === 0) return null;
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    let tile: string, flipX = false, flipY = false;
+    if (ax * 5 > ay * 12) {
+      tile = 'arrow/right';
+      flipX = dx < 0;
+    } else if (ay * 5 > ax * 12) {
+      tile = 'arrow/up';
+      flipY = dy > 0;
+    } else {
+      tile = 'arrow/upright';
+      flipX = dx < 0;
+      flipY = dy > 0;
+    }
+    const r = ARROW_R + idiv((isin(this.game.frame * 2) + 256) * 3, 512); /* a small nudge toward the box */
+    return { x: pcx + idiv(dx * r, len), y: pcy + idiv(dy * r, len), tile, flipX, flipY };
   }
 
   /** Continue: Pip goes back where the save says, once per boot, if it is
@@ -343,13 +560,18 @@ export class Meadow implements Scene {
   }
 
   /** The nearest thing within its zone of map point (x, y), or null. */
-  private thingAt(x: number, y: number): { kind: 'pip' | 'momo'; i: number } | null {
-    let best: { kind: 'pip' | 'momo'; i: number } | null = null, bd = Infinity;
-    const consider = (kind: 'pip' | 'momo', i: number, cx: number, cy: number, half: number) => {
+  private thingAt(x: number, y: number): { kind: Thing; i: number } | null {
+    let best: { kind: Thing; i: number } | null = null, bd = Infinity;
+    const consider = (kind: Thing, i: number, cx: number, cy: number, half: number) => {
       const d = Math.hypot(x - cx, y - cy);
       if (d <= this.zone(half) && d < bd) [best, bd] = [{ kind, i }, d];
     };
     consider('pip', 0, this.pipX, this.pipY - 12, 10);
+    this.boxes.forEach((b, i) => {
+      if (b.spot >= 0) consider('box', i, this.spotXY(b.spot)[0], this.spotXY(b.spot)[1] - 8, 8);
+    });
+    const arrow = this.arrowAt();
+    if (arrow) consider('arrow', 0, arrow.x + this.camX, arrow.y + this.camY, 8);
     for (const m of this.momos()) consider('momo', m.i, m.x, m.y - 14, 14);
     return best;
   }
@@ -364,6 +586,15 @@ export class Meadow implements Scene {
         this.hop();
         return;
       }
+      if (hit?.kind === 'box') {
+        this.goToBox(hit.i);
+        return;
+      }
+      if (hit?.kind === 'arrow') {
+        dbg('tap arrow');
+        this.goToBox(this.arrowBox);
+        return;
+      }
       if (hit?.kind === 'momo') {
         if (this.momoPoke < 0 || this.momoPoke > 24) {
           this.momoPoke = 0;
@@ -373,6 +604,7 @@ export class Meadow implements Scene {
         }
         return;
       }
+      this.pendingBox = -1;
       this.walkTo(x, y);
       this.dragCell = Math.floor(y / this.A.cell) * this.A.cols + Math.floor(x / this.A.cell);
     } else if (t.kind === 'move') {
@@ -380,6 +612,7 @@ export class Meadow implements Scene {
       if (cell !== this.dragCell && this.dragT >= RETARGET) {
         this.dragT = 0;
         this.dragCell = cell;
+        this.pendingBox = -1;
         this.walkTo(x, y);
       }
     }
@@ -424,6 +657,7 @@ export class Meadow implements Scene {
     } else if (this.stillT < POS_SAVE_WAIT) this.stillT++;
     this.savePos(false);
     this.updateCamera();
+    if (!this.game.scenes.fading()) this.updateBoxes();
   }
 
   /** The glint mask in each of the area's 4 shimmer colors (made once the mask has loaded). */
@@ -475,6 +709,55 @@ export class Meadow implements Scene {
     });
   }
 
+  private drawBoxes(): void {
+    const art = this.game.art;
+    const f = this.game.frame;
+    const key = this.game.art.index.names.areas[this.A.index].key;
+    this.boxes.forEach((b) => {
+      if (b.spot < 0) return;
+      const [bx, by] = this.spotXY(b.spot);
+      const sx = bx - this.camX, sy = by - this.camY;
+      const t = (f + b.phase) % 160;
+      const hop = t < 16 ? idiv(isin(t * 2) * 3, 256) : 0; /* a small hop every few seconds */
+      this.world.push({ depth: by, draw: (ctx) => art.draw(ctx, `cont16/${key}/${b.color}`, sx - 8, sy - 15 - hop) });
+      this.shadow(by - 1, sx, sy);
+      /* one gold twinkle walks round the box: small, medium, big, medium */
+      const k = Math.floor((f + b.phase) / 24) % 6;
+      const fr = Math.floor((f + b.phase) / 6) % 4;
+      const tw = `twinkle/${fr === 3 ? 1 : fr}`;
+      const sz = art.size(tw);
+      this.ui.push((ctx) => art.draw(ctx, tw, sx + TWINKLE_AROUND[k][0] - (sz.w >> 1), sy + TWINKLE_AROUND[k][1] - (sz.h >> 1)));
+    });
+  }
+
+  /** The guide arrow: over everything, blinking, from Pip toward the nearest box. */
+  private drawArrow(ctx: CanvasRenderingContext2D): void {
+    const a = this.arrowAt();
+    if (!a) return;
+    if (Math.floor(this.arrowT / ARROW_BLINK) & 1) return;
+    this.game.art.draw(ctx, a.tile, a.x - 8, a.y - 8, { flipX: a.flipX, flipY: a.flipY });
+  }
+
+  /** The found counter, top right inside the safe area: the area's icon and "7/20". */
+  private drawCounter(ctx: CanvasRenderingContext2D): void {
+    const g = this.game;
+    const n = g.collection.foundInArea(this.A.index);
+    if (!n) return;
+    let hop = 0;
+    if (this.countHop > 0) {
+      this.countHop--;
+      const t = this.countHop % 20;
+      if (this.countHop < 30) hop = idiv(t * (20 - t), 25); /* two small hops, after the fade-in */
+    }
+    const v = g.screen.view;
+    const key = g.art.index.names.areas[this.A.index].key;
+    const pillW = g.art.index.layout.countPillW as number;
+    const x = v.w - v.safe.right - 4 - pillW, y = v.safe.top + 3 - hop;
+    g.art.draw(ctx, `count_pill/${key}`, x, y);
+    const txt = `${n}/20`;
+    g.art.text(ctx, txt, x + COUNT_TEXT_X + ((32 - g.art.textWidth(txt)) >> 1), y + 5, '#8a5a7a');
+  }
+
   /** Momo asleep on each shut gate, breathing slowly, z's drifting up.
    * A tap makes Momo giggle and hop (GBA poke). The heart meter is M6. */
   private drawMomos(): void {
@@ -518,8 +801,11 @@ export class Meadow implements Scene {
     this.ui = [];
     this.drawPip();
     this.drawMomos();
+    this.drawBoxes();
     this.world.sort((a, b) => a.depth - b.depth).forEach((w) => w.draw(ctx));
     this.ui.forEach((d) => d(ctx));
     if (overlay) ctx.drawImage(overlay, -cx, -cy);
+    this.drawArrow(ctx);
+    this.drawCounter(ctx);
   }
 }

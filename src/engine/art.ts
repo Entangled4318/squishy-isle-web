@@ -95,19 +95,33 @@ export class Art {
   }
 
   /** Draws a sprite with its top-left at (x, y), optionally flipped and scaled. */
-  draw(ctx: CanvasRenderingContext2D, name: string, x: number, y: number, opts: { flipX?: boolean; sx?: number; sy?: number } = {}): void {
+  draw(ctx: CanvasRenderingContext2D, name: string, x: number, y: number, opts: { flipX?: boolean; flipY?: boolean; sx?: number; sy?: number } = {}): void {
     const s = this.index.sprites[name];
     if (!s) throw new Error(`art: no sprite ${name}`);
     const [page, ax, ay, w, h] = s;
     const sx = opts.sx ?? 1, sy = opts.sy ?? 1;
-    if (!opts.flipX && sx === 1 && sy === 1) {
+    if (!opts.flipX && !opts.flipY && sx === 1 && sy === 1) {
       ctx.drawImage(this.atlases[page], ax, ay, w, h, Math.round(x), Math.round(y), w, h);
       return;
     }
     ctx.save();
-    ctx.translate(Math.round(x) + (opts.flipX ? w * sx : 0), Math.round(y));
-    ctx.scale(opts.flipX ? -sx : sx, sy);
+    ctx.translate(Math.round(x) + (opts.flipX ? w * sx : 0), Math.round(y) + (opts.flipY ? h * sy : 0));
+    ctx.scale(opts.flipX ? -sx : sx, opts.flipY ? -sy : sy);
     ctx.drawImage(this.atlases[page], ax, ay, w, h, 0, 0, w, h);
+    ctx.restore();
+  }
+
+  /** Draws a sprite centred on (cx, cy), turned by `turn` (1/256 of a full
+   * turn, the GBA's affine angle) and scaled by (sx, sy) (1 = full size). */
+  drawAffine(ctx: CanvasRenderingContext2D, name: string, cx: number, cy: number, turn: number, sx: number, sy: number): void {
+    const s = this.index.sprites[name];
+    if (!s) throw new Error(`art: no sprite ${name}`);
+    const [page, ax, ay, w, h] = s;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((-turn * Math.PI * 2) / 256);
+    ctx.scale(sx, sy);
+    ctx.drawImage(this.atlases[page], ax, ay, w, h, -w / 2, -h / 2, w, h);
     ctx.restore();
   }
 

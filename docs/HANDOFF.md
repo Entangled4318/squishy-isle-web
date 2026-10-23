@@ -8,7 +8,9 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | --- | --- |
 | Planning steps 1 to 4 (path, touch, web details, repo and tests) | Done. Decisions in `docs/PLAN.md` |
 | Repo setup | Done. Public repo, README, MIT license, `tools/` copied from GBA v1.6 (`1d99c2e`), `tests/check_map.py` (20 checks pass) |
-| Step 5: milestone plan | Next. To agree with the owner |
+| Step 5: milestone plan | Proposed in `docs/PLAN.md` (M1 to M8). Waits for the owner's approval |
+| Step 6: write the plan down | Done. `docs/PLAN.md` |
+| M1. Foundations | Next, after approval |
 
 ## Owner notes
 

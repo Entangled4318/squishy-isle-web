@@ -1,7 +1,7 @@
 # Squishy Isle (web): the plan
 
 Agreed with the owner one step at a time. Steps 1 to 4 are decided.
-Step 5 (milestones) is next.
+Step 5 (milestones) is proposed and waits for the owner's approval.
 
 ## Step 1: the path
 
@@ -195,6 +195,107 @@ Tests, in this order:
 Safari-only behaviour (sound unlock, storage, safe areas, home screen) goes
 on a written device checklist for the owner.
 
-## Step 5: milestones
+## Step 5: milestones (proposed)
 
-To agree with the owner.
+Each milestone ends with something the owner can try on an iPhone or iPad,
+a short report with scores, and a merge to `main`, which deploys it. The
+sessions add up to 29 to 42, inside the step 1 estimate for Path C.
+
+The order puts the highest risks first: Safari's storage and sound
+(milestone 1), the ported game rules (milestone 1), and the feel of touch
+in the core loop (milestone 4). The game is playable with the GBA pixel
+art scaled up. The 2x art redraws come after launch, so the child's own
+play shows which art needs it most.
+
+### M1. Foundations (3 to 4 sessions)
+
+- Vite and TypeScript project, GitHub Actions build and Pages deploy, "do
+  not index" tag.
+- Fixed 60 Hz game step, canvas scaled sharp to the device's pixel
+  density, safe areas, both orientations.
+- Touch layer: touch down, first finger only, the sparkle and tick on every
+  touch, no browser zoom or menus.
+- Scene manager with white fades and the input block during fades.
+- Manifest, icons, Safari tags, service worker, the install hint.
+- Sound start on the first tap, audio session "playback", resume after a
+  call or a lock.
+- Game rules ported (collection, rolls, follower line, letter queue,
+  sanitize) and the save (two slots, CRC-32, IndexedDB with a localStorage
+  copy, `persist()`), with the Vitest ports of `test_collection.c` and
+  `test_save.c` and the 50-seed fixtures from the C code.
+- Test driver (fixed seed, fast frames, game log) and the first Playwright
+  check.
+- **To try:** a "tap test" page on the home screen: every tap sparkles and
+  chimes, a tap counter saves and survives a reload, and a storage panel
+  shows `persist()` and the storage state. Device checklist 1 confirms the
+  Safari facts in step 3.
+
+### M2. Art pipeline (3 to 5 sessions)
+
+- Web exporters in `tools/`: PNG atlases and JSON for the maps, collision,
+  spots, doors, exits and gates, sprites, rooms, gifts and the font.
+- Squishies and Momo drawn natively at the larger sizes.
+- Contact sheets for review, and the text checks (`check_text.py` ported).
+- **To try:** an art gallery page on the device to judge size and
+  sharpness. The owner picks the scale for the squishies.
+
+### M3. Music and sound (2 sessions)
+
+- A Web Audio synth for the GBA voices (square waves, the sine, bell,
+  hollow and reed waves, noise), the song player from `music.py`'s data,
+  and the effects.
+- Offline audio checks: pitch, tempo, loops, clicks, levels.
+- **To try:** the sound test on the grown-up page.
+
+### M4. The core loop in Blossom Meadow (6 to 8 sessions)
+
+- Title (tap to play), the meadow map with the camera that fits the
+  screen, Pip: tap to walk with the shortest path, drag to steer, the
+  movement assist, the hop.
+- Containers, the guide arrow, open, reveal, the counter pill.
+- Followers, the pen, the poke, the shelf and close-up, the save moments.
+- The touch mash test and the first play scripts.
+- **To try:** the full meadow loop, 20 friends. This is the first test
+  with your child.
+
+### M5. Meadow extras and the grown-up page (3 to 4 sessions)
+
+- The heart sign picker, the mailbox and letter queue, snack time, the
+  cottage room and gifts.
+- The grown-up page: the number gate, start over with the backup, export
+  and import, the music switch, the storage state, the parents' help.
+- **To try:** every meadow feature; export a save, import it on the other
+  device.
+
+### M6. The other areas (5 to 7 sessions)
+
+- Berry Woods, Seashell Shore, Cloud Hill: maps, containers on the open
+  screen, songs, houses.
+- Momo, the heart meter, the gate scenes, travel, Momo's cloud bed, the
+  parade.
+- The 80-friend play script and Continue in every area.
+- **To try:** the whole game.
+
+### M7. QA and launch (3 to 4 sessions)
+
+- Long mash soak, frame time on older devices, a visual pass on contact
+  sheets, every part scored to 8.5.
+- Device checklist 3, the parents' page, README with the play link.
+- Launch: the "do not index" tag comes off, tag v1.0.
+- **To try:** the release.
+
+### M8. Art upgrade (4 to 8 sessions, after launch)
+
+- 2x redraws of the world art, Pip, props, rooms and font, in the order
+  the play tests show matters most.
+
+### What the owner gives, and when
+
+| When | What |
+| --- | --- |
+| Before M1 | Approve these milestones |
+| During M1 | Turn on Pages (Settings, Pages, Source: GitHub Actions) |
+| End of M1 | Device checklist 1 on an iPhone and an iPad |
+| End of M2 | Pick the squishy scale from the gallery |
+| End of M4 | First play test with your child, and notes |
+| End of M5 to M7 | One device test round each |

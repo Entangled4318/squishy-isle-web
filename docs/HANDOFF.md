@@ -12,7 +12,8 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
   owner has done device checklist 1 and agrees to make the title the
   default (ask before the switch: it replaces a working page).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
-- Owner approved the M4 sub-steps below. Next: sub-step 3, Pip moves. Stop after each sub-step with a short report.
+- Owner approved the M4 sub-steps below and said: proceed with all
+  sub-steps unless you need me. Next: sub-step 4, containers and reveal. Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
   iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
@@ -27,7 +28,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 2. Meadow map and camera: sharp whole-number scale, more island along the
    long side, both orientations. Done.
 3. Pip moves: tap to walk by the shortest path, drag to steer, the
-   movement assist, the hop.
+   movement assist, the hop. Owner added: Momo asleep at the gate. Done.
 4. Containers and reveal: containers on the map, the guide arrow, the open
    screen, the reveal, the counter pill, a save at each reveal.
 5. Followers and the pen: the follower line, the pen, the poke.
@@ -46,7 +47,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
 | M2. Art pipeline | Built. Owner picked 16 px for the map |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
-| M4. Core loop in the meadow | Sub-steps 1 and 2 of 7 done (title, map and camera), on branch `claude/magical-euler-0drmuw` |
+| M4. Core loop in the meadow | Sub-steps 1 to 3 of 7 done (title, map and camera, Pip moves), on branch `claude/magical-euler-0drmuw` |
 
 ## Owner notes
 
@@ -235,6 +236,35 @@ visit would have lost Pip's place; found before the first run).
 Not done yet: Momo asleep at the Berry Woods gate (the bridge, east
 edge). The gate blocks Pip in sub-step 3, so Momo must be drawn there
 too, or the block is an invisible wall.
+
+7. **Pip moves** (`src/scenes/meadow.ts`, `src/scenes/path.ts`). A touch
+   on the ground walks Pip by the shortest path: breadth-first search on
+   the 4 px collision cells (8 directions, no corner cutting); a free cell
+   is one where Pip's feet box fits at the cell's middle. A target he
+   cannot reach (the pen, the pond) gives the nearest reachable cell. The
+   path drops waypoints that Pip can walk to in a straight line (up to 4
+   checks a frame). Each frame is one GBA `move()` toward the next
+   waypoint: 1.25 px (8.8 fixed), same speed on diagonals, the stair-step
+   sidestep and the edge assist. Pip faces the larger part of the step,
+   with a little stickiness so he does not flicker on diagonals. A finger
+   that stays down and moves gets a new path when it enters a new cell,
+   at most every 6 frames. A walk with no progress for 20 frames stops.
+   A tap on Pip is the hop (GBA B); a tap on Momo a giggle hop and a
+   squeak. Tap zones: 32 points round the middle (64-point zones) or the
+   thing's half size, the nearest thing wins. Pip's spot saves after he
+   stands still 60 frames (GBA `save_pos`). Walk frames and the 1 px bob
+   as on the GBA. Momo sleeps on each shut gate (breathing, two z's) and
+   the gate blocks Pip as in `map_blocked`; the heart meter is M6.
+   Doors and exits wait for M5 (house) and M6 (areas).
+8. **Tests**: `tests/unit/path.test.ts` (6) and `tests/e2e/walk.spec.ts`
+   (6 a device): a straight walk, round the house, the pen and the pond,
+   a drag, the hop, Momo's giggle and the shut bridge, the saved spot,
+   300 random taps and drags with Pip never in a wall. 165 unit and 48
+   play checks pass.
+
+Score: movement 8.5 (first pass 8.5; two test expectations were wrong,
+not the game: the walk round a wall end, and Pip stops beside Momo, not
+west of the gate). To judge on a device: walk speed and the drag feel.
 
 ## Commands
 

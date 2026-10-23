@@ -69,5 +69,7 @@ void game.boot(first).then(() => {
     meadow: () => ({ pip: [meadow.pipX, meadow.pipY], cam: [meadow.camX, meadow.camY], area: meadow.A?.index }),
     placePip: (x: number, y: number) => meadow.place(x, y),
     goMeadow: () => game.scenes.go(meadow),
+    walk: () => ({ path: meadow.path.length, dir: meadow.dir, walking: meadow.walkT > 0 }),
+    blocked: (x: number, y: number) => meadow.blocked(x, y),
   };
 });

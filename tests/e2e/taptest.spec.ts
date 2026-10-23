@@ -3,8 +3,14 @@
 import { expect, test } from '@playwright/test';
 import { drive, log, logHas, open, run, tapArt } from './helpers';
 
-test('boots into the tap test with a new save', async ({ page }) => {
+test('the main address opens the game at the title', async ({ page }) => {
   await open(page);
+  await run(page, 2);
+  expect(await drive(page, (d) => d.scene())).toBe('title');
+});
+
+test('boots into the tap test with a new save', async ({ page }) => {
+  await open(page, '&taptest');
   await run(page, 20);
   await logHas(page, /save: new v2 boots=1 found=0/);
   await logHas(page, /scene taptest/);
@@ -12,7 +18,7 @@ test('boots into the tap test with a new save', async ({ page }) => {
 });
 
 test('a tap counts, sparkles and saves; the count survives a reload', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   await run(page, 20); /* past the fade-in */
   const v = await drive(page, (d) => d.view());
   for (let i = 0; i < 3; i++) {
@@ -30,7 +36,7 @@ test('a tap counts, sparkles and saves; the count survives a reload', async ({ p
 });
 
 test('the save survives losing one store: localStorage cleared, IndexedDB keeps it', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   await run(page, 20);
   await tapArt(page, 50, 50);
   await run(page, 2);
@@ -43,7 +49,7 @@ test('the save survives losing one store: localStorage cleared, IndexedDB keeps 
 });
 
 test('the save survives losing one store: IndexedDB deleted, localStorage keeps it', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   await run(page, 20);
   await tapArt(page, 50, 50);
   await run(page, 2);
@@ -55,7 +61,7 @@ test('the save survives losing one store: IndexedDB deleted, localStorage keeps 
 });
 
 test('only the first finger acts; a second finger only sparkles', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   await run(page, 20);
   await drive(page, (d) => {
     d.touch('down', 40, 40);
@@ -68,7 +74,7 @@ test('only the first finger acts; a second finger only sparkles', async ({ page 
 });
 
 test('real two-finger touch: one tap counted', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   await run(page, 20);
   const cdp = await page.context().newCDPSession(page);
   const p = (id: number, x: number, y: number) => ({ x, y, id, radiusX: 5, radiusY: 5, force: 1 });
@@ -80,7 +86,7 @@ test('real two-finger touch: one tap counted', async ({ page }) => {
 });
 
 test('taps during the fade-in only sparkle', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   expect(await drive(page, (d) => d.fading())).toBe(true);
   await drive(page, (d) => {
     d.touch('down', 40, 40);
@@ -92,7 +98,7 @@ test('taps during the fade-in only sparkle', async ({ page }) => {
 });
 
 test('the view keeps whole-number scale and at least the GBA screen, in both orientations', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   const size = page.viewportSize()!;
   for (const [w, h] of [[size.width, size.height], [size.height, size.width]]) {
     await page.setViewportSize({ width: w, height: h });
@@ -108,7 +114,7 @@ test('the view keeps whole-number scale and at least the GBA screen, in both ori
 });
 
 test('no browser zoom, scroll or callout on the page', async ({ page }) => {
-  await open(page);
+  await open(page, '&taptest');
   const css = await page.evaluate(() => {
     const b = getComputedStyle(document.body);
     const c = getComputedStyle(document.getElementById('game')!);
@@ -120,7 +126,7 @@ test('no browser zoom, scroll or callout on the page', async ({ page }) => {
 });
 
 test('plays offline after the first visit', async ({ page, context }) => {
-  await open(page, '&sw=1');
+  await open(page, '&taptest&sw=1');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => null));
   await page.reload(); /* now the service worker controls the page */
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
@@ -135,7 +141,7 @@ test('plays offline after the first visit', async ({ page, context }) => {
 });
 
 test('install hint: shows for parents, one tap on OK closes it for good', async ({ page }) => {
-  await open(page, '&hint=1');
+  await open(page, '&taptest&hint=1');
   await expect(page.locator('#install-hint')).toBeVisible();
   await page.locator('#install-hint button').tap();
   await expect(page.locator('#install-hint')).toHaveCount(0);

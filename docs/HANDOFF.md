@@ -5,18 +5,17 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 ## Start here (next session)
 
 - Live site: https://entangled4318.github.io/squishy-isle-web/ (Pages is
-  on; each push to `main` deploys). Test pages: `?gallery`, `?sound`,
-  `?title` (the game, M4).
-- M4 work is on the branch `claude/magical-euler-0drmuw`. It merges to
-  `main` at the end of M4. The tap test stays the default page until the
-  owner has done device checklist 1 and agrees to make the title the
-  default (ask before the switch: it replaces a working page).
+  on; each push to `main` deploys). The main address opens the game (the
+  title). Test pages: `?taptest` (device checklist 1), `?gallery`,
+  `?sound`. The owner agreed to the switch after M4.
+- M4 work was on the branch `claude/magical-euler-0drmuw`; it is merged
+  to `main` (fast-forward).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
-- Owner approved the M4 sub-steps below and said: proceed with all
-  sub-steps unless you need me. All 7 are done. Open question to the
-  owner: make the title the default page (it replaces the tap test page,
-  which device checklist 1 uses). Ask before the switch.
-- Owner to do: device checklist 4 (the meadow loop at `?title`) and the
+- Owner approved the M4 sub-steps below; all 7 are done.
+- Owner play test note: "I couldn't store animals in the pen, nor figure
+  out a way to swap them". The heart sign picker (GBA pick mode at the
+  pen sign) is the first item of M5. Claude proposed to build it next.
+- Owner to do: device checklist 4 (the meadow loop) and the
   first play test with the child.
 - Next work after the owner's notes: M5 (`docs/PLAN.md`). Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an

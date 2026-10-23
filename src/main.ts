@@ -47,15 +47,15 @@ meadow.shelfScene = () => shelf;
 const open = new Open(game, () => meadow.open, () => reveal.show(meadow.open.friend, true), () => meadow);
 meadow.openScene = () => open;
 const title = (): Title => new Title(game, () => meadow, () => meadow.reset());
-/* ?title is the game (M4). The tap test stays the default page until the
- * owner has done device checklist 1 and agrees to the switch. */
+/* The game starts at the title (owner's choice after M4). The test pages:
+ * ?taptest (device checklist 1), ?gallery, ?sound. */
 const first = params.has('gallery')
   ? () => new Gallery(game)
   : params.has('sound')
     ? () => new SoundTest(game)
-    : params.has('title')
-      ? title
-      : () => new TapTest(game);
+    : params.has('taptest')
+      ? () => new TapTest(game)
+      : title;
 
 void game.boot(first).then(() => {
   if (!testMode) return;

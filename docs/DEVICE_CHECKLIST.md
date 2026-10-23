@@ -5,9 +5,12 @@ rules for sound, storage and the home screen, so these checks need a real
 device. Each milestone adds a section. Write "ok" or what you saw next to
 each item, or tell Claude in chat.
 
-Address: https://entangled4318.github.io/squishy-isle-web/
+Address of the game: https://entangled4318.github.io/squishy-isle-web/
 
 ## Checklist 1 (milestone 1: the tap test)
+
+Address: https://entangled4318.github.io/squishy-isle-web/?taptest
+(the main address showed the tap test until M4; now it opens the game).
 
 Do every step on one iPhone and one iPad. The panel at the bottom left of
 the tap test shows most of the answers.
@@ -81,13 +84,13 @@ chip. If you know the songs from the Brick or mGBA, compare by ear.
 4. Tap chime, squeak (5 taps: each a little higher), boing, hop, pop.
 5. With a song on, lock the screen, then unlock and tap. The song comes
    back.
-6. On the tap test page (the main address), each tap gives the GBA chime.
+6. On the tap test page (`?taptest`), each tap gives the GBA chime.
 
 ## Checklist 4 (milestone 4: the meadow loop)
 
-Address: https://entangled4318.github.io/squishy-isle-web/?title
+Address: https://entangled4318.github.io/squishy-isle-web/ (the main
+address opens the game since the end of M4).
 
-The game opens at this address until you agree to make it the main page.
 Do these first yourself, then give it to your child.
 
 1. The letters drop in. Tap once: the hello jingle plays and the letters

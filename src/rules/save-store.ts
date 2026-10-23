@@ -53,6 +53,14 @@ function newer(b: Uint8Array): boolean {
   return d.magic === SAVE_MAGIC && d.version > SAVE_VERSION && d.version <= MAX_REAL_VERSION;
 }
 
+/** What a slot's bytes hold: a valid save, a save from a newer version, or neither. */
+export function recordState(b: Uint8Array): { kind: 'valid' | 'newer' | 'none'; seq: number } {
+  const r = b.subarray(0, SAVE_SIZE);
+  if (r.length < SAVE_SIZE) return { kind: 'none', seq: 0 };
+  const seq = decodeSave(r).seq;
+  return { kind: valid(r) ? 'valid' : newer(r) ? 'newer' : 'none', seq };
+}
+
 export class SaveStore {
   /** The slot written last, -1 = none. */
   activeSlot = -1;

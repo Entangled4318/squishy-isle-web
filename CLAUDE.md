@@ -31,11 +31,12 @@ v1.6, its `docs/DESIGN.md` and `docs/HANDOFF.md`.
 
 ## Commands
 
-    pip install numpy pillow
+    npm install && pip install numpy pillow
+    npm run assets                       # generated art into public/gen
+    npm run check                        # typecheck, unit tests, build, play tests
     python3 tests/check_map.py OUTDIR    # map data checks (20 checks)
 
-The web build, unit tests and play tests come with milestone 1
-(`docs/PLAN.md`).
+More in `docs/HANDOFF.md` (Commands).
 
 ## Traps known before the first line of code
 

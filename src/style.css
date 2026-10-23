@@ -1,0 +1,97 @@
+/* The page is one full-screen canvas. No scroll, zoom, select, callout or
+ * tap highlight, so a toddler's taps only reach the game. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  background: #fbe9f2;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+#game {
+  display: block;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  image-rendering: pixelated;
+}
+
+#install-hint {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(90, 42, 68, 0.35);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  font: 16px/1.35 -apple-system, system-ui, sans-serif;
+  color: #3d1f30;
+  z-index: 10;
+}
+
+#install-hint .card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px 20px;
+  max-width: 340px;
+  margin: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+#install-hint .title {
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+#install-hint ol {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+#install-hint li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+#install-hint .icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: #f4f4f7;
+  border-radius: 9px;
+  flex: none;
+}
+
+#install-hint .small {
+  font-size: 13px;
+  color: #6b4a5c;
+  margin: 0 0 12px;
+}
+
+#install-hint button {
+  width: 100%;
+  font: inherit;
+  font-weight: 700;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #e86aa6;
+  color: #fff;
+}

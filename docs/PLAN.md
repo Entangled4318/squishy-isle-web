@@ -1,7 +1,7 @@
 # Squishy Isle (web): the plan
 
 Agreed with the owner one step at a time. Steps 1 to 4 are decided.
-Step 5 (milestones) is proposed and waits for the owner's approval.
+Step 5 (milestones) is approved. Progress is in `docs/HANDOFF.md`.
 
 ## Step 1: the path
 
@@ -195,7 +195,7 @@ Tests, in this order:
 Safari-only behaviour (sound unlock, storage, safe areas, home screen) goes
 on a written device checklist for the owner.
 
-## Step 5: milestones (proposed)
+## Step 5: milestones (approved)
 
 Each milestone ends with something the owner can try on an iPhone or iPad,
 a short report with scores, and a merge to `main`, which deploys it. The
@@ -234,7 +234,9 @@ play shows which art needs it most.
 
 - Web exporters in `tools/`: PNG atlases and JSON for the maps, collision,
   spots, doors, exits and gates, sprites, rooms, gifts and the font.
-- Squishies and Momo drawn natively at the larger sizes.
+- Squishies and Momo drawn natively at the larger sizes. Found in M1: the
+  bodies draw at any size, but the faces are pixel stamps for 16, 32 and
+  64 px only, so each new size needs new face stamps (about +1 session).
 - Contact sheets for review, and the text checks (`check_text.py` ported).
 - **To try:** an art gallery page on the device to judge size and
   sharpness. The owner picks the scale for the squishies.

@@ -23,6 +23,7 @@ import type { AreaData } from '../engine/art';
 import { findPath, Grid } from './path';
 import { Closeup } from './closeup';
 import { friendFlavor, friendSpecies } from '../rules/collection';
+import { buttonHit, drawButton } from './button';
 import { idiv, isin } from '../engine/gba';
 
 const FEET_W = 5; /* half width of Pip's feet box */
@@ -168,8 +169,10 @@ export class Meadow implements Scene {
   private countHop = 0;
   /** set when a box opens, for the open and reveal screens */
   open: OpenInfo = { area: 0, color: 0, friend: -1 };
-  /** the open screen (set by main.ts) */
+  /** the open screen and the shelf (set by main.ts) */
   openScene: (() => Scene) | null = null;
+  shelfScene: (() => Scene) | null = null;
+  private shelfPress = 0;
   camX = 0;
   camY = 0;
   private glint: HTMLCanvasElement[] = [];
@@ -782,6 +785,18 @@ export class Meadow implements Scene {
 
   private onTouch(t: TouchEvt): void {
     const x = t.x + this.camX, y = t.y + this.camY;
+    if (t.kind === 'down' && buttonHit(this.game, t.x, t.y)) {
+      /* the shelf button (GBA START) */
+      this.shelfPress = 8;
+      this.dragCell = -2; /* this finger does not steer */
+      this.game.sound.chime(2);
+      dbg(`meadow shelf pip=${this.pipX},${this.pipY}`);
+      this.posDirty = true;
+      this.savePos(true);
+      if (this.shelfScene) this.game.scenes.go(this.shelfScene());
+      return;
+    }
+    if (t.kind === 'move' && this.dragCell === -2) return;
     if (t.kind === 'down') {
       this.dragT = 0;
       this.dragCell = -1;
@@ -845,6 +860,7 @@ export class Meadow implements Scene {
 
   update(touches: TouchEvt[]): void {
     this.dragT++;
+    if (this.shelfPress > 0) this.shelfPress--;
     for (const t of touches) this.onTouch(t);
     if (this.hopT >= 0) {
       this.pipHop = hopH(this.hopT);
@@ -1052,5 +1068,6 @@ export class Meadow implements Scene {
     if (overlay) ctx.drawImage(overlay, -cx, -cy);
     this.drawArrow(ctx);
     this.drawCounter(ctx);
+    drawButton(g, ctx, (bx, by) => g.art.draw(ctx, 'sq/bunny/strawberry/16/idle', bx - 8, by - 8), this.shelfPress / 8);
   }
 }

@@ -13,7 +13,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
   default (ask before the switch: it replaces a working page).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
 - Owner approved the M4 sub-steps below and said: proceed with all
-  sub-steps unless you need me. Next: sub-step 6, shelf and close-up. Stop after each sub-step with a short report.
+  sub-steps unless you need me. Next: sub-step 7, tests and release. Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
   iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
@@ -33,7 +33,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
    screen, the reveal, the counter pill, a save at each reveal. Done.
 5. Followers and the pen: the follower line, the pen, the poke. Done.
 6. Shelf and close-up: shelf pages, close-up, the home button, the other
-   save moments.
+   save moments. Done.
 7. Tests and release: the touch mash test, the first play scripts, the
    `check_text.py` port, then the merge to `main` for the first play test
    with the child.
@@ -47,7 +47,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
 | M2. Art pipeline | Built. Owner picked 16 px for the map |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
-| M4. Core loop in the meadow | Sub-steps 1 to 5 of 7 done (title, map, moves, containers, friends), on branch `claude/magical-euler-0drmuw` |
+| M4. Core loop in the meadow | Sub-steps 1 to 6 of 7 done (title, map, moves, containers, friends, shelf), on branch `claude/magical-euler-0drmuw` |
 
 ## Owner notes
 
@@ -321,6 +321,38 @@ bands showed half name pills; the open hearts touched).
 
 Score: friends 8.5 (first pass 8: after a jump the line stayed where
 Pip had been).
+
+15. **Round buttons** `src/scenes/button.ts`: a 21 px pink disc drawn in
+    code (the GBA had no such button), top-left inside the safe area, a
+    zone of at least 64 points, pushed down for a moment on a tap. The
+    home button (a house) is on the shelf and the close-up and goes to
+    the map. It is not on the open screen or the reveal: those finish by
+    themselves in a few seconds, and leaving them would drop the box.
+    The map has the shelf button (a 16 px friend) in the same corner (GBA
+    START; Pip's spot saves first). `fixedLayout()` takes the button room:
+    the fixed screen moves (or shrinks a step) so the button never covers
+    it; only an iPad in landscape shrinks (9 to 8).
+16. **Shelf** `src/scenes/shelf.ts` (GBA `shelf.c`): 4 pages, 32 px
+    friends or silhouettes, sparkle twinkles, the name pill (the area's
+    name, a friend's name, or "Find me!"). A tap on a tab turns to that
+    page (chime), a sideways swipe of 30 px turns one page, a tap on a
+    found friend shows the frame and its open face and goes to the
+    close-up, a tap on a silhouette wiggles it with "Find me!". It opens
+    on the current area's page after an area change. The bands round the
+    shelf are the wall's own color (`drawFixed(..., flat)`).
+17. **Close-up** from the shelf: a tap on the friend squishes it; 3
+    squishes go back to the shelf; the third close-up in a row ended that
+    way goes to the map; a tap away from it goes back; home goes to the
+    map. The map resets the 3-in-a-row count.
+18. **Tests** `tests/e2e/shelf.spec.ts` (3 a device): the shelf button,
+    a tab, a swipe, home; "Find me!", a close-up and 3 squishes back; a
+    tap away, home from the close-up, the 3-in-a-row rule. Test driver:
+    `fixedToView()`, `button()`, `shelfPage()`. 165 unit and 68 play
+    checks pass.
+
+Score: shelf, close-up and buttons 8.5 (first pass 7.5: on an iPad in
+portrait the band above the shelf repeated the active tab as a pink
+stripe; a flat band color was a shade off the wall's own color).
 
 ## Commands
 

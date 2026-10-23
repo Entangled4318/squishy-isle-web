@@ -136,7 +136,16 @@ export interface FixedLayout {
   h: number;
 }
 
-export function fixedLayout(v: View, w = MIN_LONG, h = MIN_SHORT): FixedLayout {
-  const k = fitScale(v.devW, v.devH, w, h);
-  return { k, ox: Math.floor((v.devW - w * k) / 2), oy: Math.floor((v.devH - h * k) / 2), w, h };
+export function fixedLayout(v: View, w = MIN_LONG, h = MIN_SHORT, button = 0): FixedLayout {
+  let k = fitScale(v.devW, v.devH, w, h);
+  /* button > 0: keep a strip of that many view art pixels free at the left
+   * (landscape) or the top (portrait), past the safe area, for the home
+   * button. The screen shrinks a step at a time until the strip fits. */
+  const need = button ? (button + (v.portrait ? v.safe.top : v.safe.left)) * v.k : 0;
+  const room = (k2: number) => (v.portrait ? v.devH - h * k2 : v.devW - w * k2);
+  while (k > 1 && room(k) < need) k--;
+  let ox = Math.floor((v.devW - w * k) / 2), oy = Math.floor((v.devH - h * k) / 2);
+  if (button && !v.portrait) ox = Math.max(ox, Math.min(need, v.devW - w * k));
+  if (button && v.portrait) oy = Math.max(oy, Math.min(need, v.devH - h * k));
+  return { k, ox, oy, w, h };
 }

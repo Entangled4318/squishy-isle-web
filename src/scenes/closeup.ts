@@ -15,6 +15,7 @@ import { SONG } from '../engine/audio';
 import { idiv, isin } from '../engine/gba';
 import { drawFixed, toFixed } from './backdrop';
 import { friendFlavor, friendSpecies } from '../rules/collection';
+import { BUTTON_ROOM, buttonHit, drawButton } from './button';
 
 const N_CONF = 24;
 const N_STARS = 6;
@@ -171,8 +172,15 @@ export class Closeup implements Scene {
       return;
     }
     this.calmT++;
+    if (tap && !g.scenes.fading() && buttonHit(g, tap.x, tap.y)) {
+      Closeup.streak = 0;
+      g.sound.chime(2);
+      dbg('closeup home');
+      g.scenes.go(this.toMeadow());
+      return;
+    }
     if (tap) {
-      const p = toFixed(g, tap.x, tap.y);
+      const p = toFixed(g, tap.x, tap.y, BUTTON_ROOM);
       const v = g.screen.view;
       const r = Math.max(34, (32 * v.dpr) / v.k); /* the friend, or 32 points round it */
       if (Math.hypot(p.x - CX, p.y - (FLOOR - BOTTOM)) <= r) {
@@ -227,7 +235,9 @@ export class Closeup implements Scene {
 
   draw(ctx: CanvasRenderingContext2D): void {
     const g = this.game;
-    drawFixed(g, ctx, g.art.cached(g.art.index.screens.closeup), () => this.drawFriend(ctx), 132); /* the name pill starts below */
+    /* the name pill starts at row 132; the close-up keeps room for the home button */
+    drawFixed(g, ctx, g.art.cached(g.art.index.screens.closeup), () => this.drawFriend(ctx), 132, this.reveal ? 0 : BUTTON_ROOM);
+    if (!this.reveal) drawButton(g, ctx, 'home');
   }
 
   private drawFriend(ctx: CanvasRenderingContext2D): void {

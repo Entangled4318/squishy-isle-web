@@ -19,19 +19,30 @@ export function drawFixed(
   /** rows from here down repeat the edge column instead of the mirror
    * (a name pill near the bottom would show half pills at the edges) */
   mirrorRows = FIXED_H,
+  /** keep room for the home button (view art pixels), 0 = none */
+  button = 0,
+  /** true: all the bands are the backdrop's bottom-left pixel (a plain wall) */
+  flat = false,
 ): FixedLayout {
   const v = game.screen.view;
-  const f = fixedLayout(v, FIXED_W, FIXED_H);
+  const f = fixedLayout(v, FIXED_W, FIXED_H, button);
   const W = FIXED_W, H = FIXED_H;
   const x1 = f.ox + W * f.k, y1 = f.oy + H * f.k;
   ctx.imageSmoothingEnabled = false;
-  if (img) {
+  if (img && flat) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(img, 0, H - 1, 1, 1, 0, 0, v.devW, v.devH);
+    ctx.setTransform(f.k, 0, 0, f.k, f.ox, f.oy);
+    ctx.drawImage(img, 0, 0);
+  } else if (img) {
     if (f.ox > 0) {
       const m = mirrorRows;
-      ctx.setTransform(-f.k, 0, 0, f.k, f.ox, f.oy);
-      ctx.drawImage(img, 0, 0, W, m, 0, 0, W, m);
-      ctx.setTransform(-f.k, 0, 0, f.k, x1 + W * f.k, f.oy);
-      ctx.drawImage(img, 0, 0, W, m, 0, 0, W, m);
+      if (m > 0) {
+        ctx.setTransform(-f.k, 0, 0, f.k, f.ox, f.oy);
+        ctx.drawImage(img, 0, 0, W, m, 0, 0, W, m);
+        ctx.setTransform(-f.k, 0, 0, f.k, x1 + W * f.k, f.oy);
+        ctx.drawImage(img, 0, 0, W, m, 0, 0, W, m);
+      }
       if (m < H) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(img, 0, m, 1, H - m, 0, f.oy + m * f.k, f.ox, (H - m) * f.k);
@@ -53,8 +64,8 @@ export function drawFixed(
 }
 
 /** A touch in view art pixels, moved into the fixed screen's pixels. */
-export function toFixed(game: Game, x: number, y: number): { x: number; y: number } {
+export function toFixed(game: Game, x: number, y: number, button = 0): { x: number; y: number } {
   const v = game.screen.view;
-  const f = fixedLayout(v, FIXED_W, FIXED_H);
+  const f = fixedLayout(v, FIXED_W, FIXED_H, button);
   return { x: (x * v.k + v.ox - f.ox) / f.k, y: (y * v.k + v.oy - f.oy) / f.k };
 }

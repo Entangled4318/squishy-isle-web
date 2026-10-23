@@ -12,10 +12,13 @@ import { Title } from './scenes/title';
 import { Meadow } from './scenes/meadow';
 import { Open } from './scenes/open';
 import { Closeup } from './scenes/closeup';
+import { Shelf } from './scenes/shelf';
 import { isIOS, showInstallHint } from './shell/install-hint';
 import { standalone } from './scenes/taptest';
 import { encodeSave } from './rules/save-data';
 import { TouchKind } from './engine/input';
+import { fixedLayout } from './engine/screen';
+import { BUTTON_ROOM, buttonAt, BUTTON_D } from './scenes/button';
 
 const params = new URLSearchParams(location.search);
 const testMode = params.has('test');
@@ -37,8 +40,11 @@ declare global {
 }
 
 const meadow = new Meadow(game);
-const closeup = new Closeup(game, () => meadow);
-const open = new Open(game, () => meadow.open, () => closeup.show(meadow.open.friend, true), () => meadow);
+const reveal = new Closeup(game, () => meadow);
+const shelf: Shelf = new Shelf(game, () => meadow, (id) => closeup.show(id, false));
+const closeup = new Closeup(game, () => meadow, () => shelf);
+meadow.shelfScene = () => shelf;
+const open = new Open(game, () => meadow.open, () => reveal.show(meadow.open.friend, true), () => meadow);
 meadow.openScene = () => open;
 const title = (): Title => new Title(game, () => meadow, () => meadow.reset());
 /* ?title is the game (M4). The tap test stays the default page until the
@@ -82,6 +88,17 @@ void game.boot(first).then(() => {
       pen: meadow.pen.map((r) => [r.x, r.y, r.id]),
       follow: meadow.followIds.map((id, k) => [meadow.followerPos(k).x, meadow.followerPos(k).y, id]),
     }),
-    stage: () => ({ popT: open.popT, landed: closeup.landedT, squishes: closeup.squishes, leave: closeup.leaveT }),
+    stage: () => ({ popT: open.popT, landed: reveal.landedT, squishes: reveal.squishes, leave: reveal.leaveT }),
+    shelfPage: () => shelf.page,
+    /** a backdrop pixel as view art pixels (room: the screen keeps room for the home button) */
+    fixedToView: (x: number, y: number, room: boolean) => {
+      const v = screen.view;
+      const f = fixedLayout(v, 240, 160, room ? BUTTON_ROOM : 0);
+      return [(x * f.k + f.ox - v.ox) / v.k, (y * f.k + f.oy - v.oy) / v.k];
+    },
+    button: () => {
+      const b = buttonAt(game);
+      return [b.x + BUTTON_D / 2, b.y + BUTTON_D / 2];
+    },
   };
 });

@@ -12,8 +12,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
   owner has done device checklist 1 and agrees to make the title the
   default (ask before the switch: it replaces a working page).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
-- Owner approved the M4 sub-steps below. Next: sub-step 2, the meadow map
-  and the camera. Stop after each sub-step with a short report.
+- Owner approved the M4 sub-steps below. Next: sub-step 3, Pip moves. Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
   iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
@@ -26,7 +25,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 
 1. Title screen. Done.
 2. Meadow map and camera: sharp whole-number scale, more island along the
-   long side, both orientations.
+   long side, both orientations. Done.
 3. Pip moves: tap to walk by the shortest path, drag to steer, the
    movement assist, the hop.
 4. Containers and reveal: containers on the map, the guide arrow, the open
@@ -47,7 +46,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
 | M2. Art pipeline | Built. Owner picked 16 px for the map |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
-| M4. Core loop in the meadow | Sub-step 1 of 7 done (title), on branch `claude/magical-euler-0drmuw` |
+| M4. Core loop in the meadow | Sub-steps 1 and 2 of 7 done (title, map and camera), on branch `claude/magical-euler-0drmuw` |
 
 ## Owner notes
 
@@ -212,6 +211,30 @@ Score: title 8.5 (first pass 7.5: the side bands stretched the edge
 column into dark stripes where the pink tree touches the edge; the
 version text crossed the island's edge and then touched a heart; with no
 sound, the game could never leave the title).
+
+5. **Meadow map and camera** `src/scenes/meadow.ts`, from the GBA
+   `viewer.c`: the ground, the water glint (the mask tinted in the area's
+   4 shimmer colors, next color every 12 frames), world sprites sorted by
+   feet row (nearest last), then the overlay (tree tops over sprites).
+   Pip stands with his shadow at 5/16 (the GBA blend). The camera keeps
+   Pip 12 px above the middle and stops at the map's edges; a view larger
+   than the map centres it. The view is the screen in art pixels, so a
+   wide phone shows more meadow sideways and an iPad in portrait shows
+   more upward. The area song plays. Continue puts Pip back at the saved
+   spot once per boot if it is walkable, else at the house; a new game
+   starts at the house (`reset()`, GBA `meadow_reset`). One `Meadow`
+   object lives for the whole run, so Pip keeps his place between visits.
+   Taps only sparkle until sub-step 3. Test driver: `meadow()`,
+   `placePip(x, y)`, `goMeadow()`.
+6. **Tests** `tests/e2e/meadow.spec.ts` (2 checks a device): the start at
+   the house, the camera position, both corners clamped, the glint
+   changes after 12 frames. 159 unit and 36 play checks pass.
+
+Score: map and camera 8.5 (first pass 8: a new meadow object on each
+visit would have lost Pip's place; found before the first run).
+Not done yet: Momo asleep at the Berry Woods gate (the bridge, east
+edge). The gate blocks Pip in sub-step 3, so Momo must be drawn there
+too, or the block is an invisible wall.
 
 ## Commands
 

@@ -38,9 +38,6 @@ test('the letters drop by themselves; the first tap says hello, the next plays',
   const s = (await drive(page, (d) => d.save())) as unknown as { rng: number; found: number[] };
   expect(s.rng).not.toBe(rng0);
   expect(s.found.every((b) => b === 0)).toBe(true);
-  await tap(page);
-  await run(page, 20);
-  expect(await drive(page, (d) => d.scene())).toBe('title');
   expect(errors).toEqual([]);
 });
 

@@ -34,7 +34,8 @@ declare global {
   }
 }
 
-const title = (): Title => new Title(game, () => new Meadow(game, title));
+const meadow = new Meadow(game);
+const title = (): Title => new Title(game, () => meadow, () => meadow.reset());
 /* ?title is the game (M4). The tap test stays the default page until the
  * owner has done device checklist 1 and agrees to the switch. */
 const first = params.has('gallery')
@@ -65,5 +66,8 @@ void game.boot(first).then(() => {
     sound: () => game.sound.state(),
     unlock: () => game.sound.unlock(),
     addFriend: (id: number) => game.collection.add(id),
+    meadow: () => ({ pip: [meadow.pipX, meadow.pipY], cam: [meadow.camX, meadow.camY], area: meadow.A?.index }),
+    placePip: (x: number, y: number) => meadow.place(x, y),
+    goMeadow: () => game.scenes.go(meadow),
   };
 });

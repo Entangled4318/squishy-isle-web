@@ -55,6 +55,7 @@ export class Title implements Scene {
   constructor(
     private game: Game,
     private next: () => Scene,
+    private onNewGame: () => void = () => {},
   ) {}
 
   private get bg(): string {
@@ -102,7 +103,10 @@ export class Title implements Scene {
     const g = this.game;
     const c = g.collection;
     const fresh = c.foundTotal() === 0;
-    if (fresh) c.newGame((Math.imul(g.frame, 2654435761) ^ c.s.rng ^ (c.s.boots << 16)) >>> 0);
+    if (fresh) {
+      c.newGame((Math.imul(g.frame, 2654435761) ^ c.s.rng ^ (c.s.boots << 16)) >>> 0);
+      this.onNewGame();
+    }
     dbg(`title start ${fresh ? 'new' : 'continue'}`);
     g.sound.chime(4);
     g.sound.stopMusic();

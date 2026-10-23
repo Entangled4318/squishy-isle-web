@@ -22,6 +22,7 @@ import { SONG } from '../engine/audio';
 import type { AreaData } from '../engine/art';
 import { findPath, Grid } from './path';
 import { Closeup } from './closeup';
+import { friendFlavor, friendSpecies } from '../rules/collection';
 import { idiv, isin } from '../engine/gba';
 
 const FEET_W = 5; /* half width of Pip's feet box */
@@ -72,9 +73,40 @@ export interface OpenInfo {
   friend: number;
 }
 
+const MAX_PEN = 20; /* every friend of an area fits in its pen */
+const PEN_TRIES = 10; /* random spots tried for each new pen target */
+const PEN_ROOM = 13; /* px: pen friends do not walk closer than this */
+const PEN_RETARGETS = 3; /* new-target searches a frame at most */
+const TRAIL = 64; /* Pip's recent steps, for followers */
+const TRAIL_GAP = 14; /* steps between followers in the line */
+const POKE_SQUISH = 10; /* frames on the squish frame, then a little hop */
+const POKE_LEN = 40; /* frames until the heart has floated away */
+const enum Poke {
+  Follower = 1,
+  Pen,
+  Momo,
+}
+
+interface Roamer {
+  id: number;
+  x: number;
+  y: number;
+  tx: number;
+  ty: number;
+  wait: number;
+  step: number;
+  stuck: number;
+}
+
+/** little hops while walking */
+const hopOf = (step: number) => {
+  const ph = Math.floor(step / 5) % 4;
+  return ph === 1 ? 2 : ph === 2 ? 3 : 0;
+};
+
 const hopH = (t: number) => (t >= 0 && t < HOP_LEN ? idiv(t * (HOP_LEN - t), 10) : 0); /* up to 6 px */
 
-type Thing = 'pip' | 'momo' | 'box' | 'arrow';
+type Thing = 'pip' | 'momo' | 'box' | 'arrow' | 'follower' | 'pen';
 
 export const enum Dir {
   Down,
@@ -114,8 +146,14 @@ export class Meadow implements Scene {
   private stuckT = 0;
   private dragT = 0;
   private dragCell = -1;
-  private momoPoke = -1;
-  private momoGate = -1;
+  /** the squished friend or tickled Momo (GBA poke) */
+  poke = { t: -1, kind: 0, k: 0, x: 0, y: 0 };
+  pen: Roamer[] = [];
+  followIds: number[] = [];
+  private trailX = new Int16Array(TRAIL);
+  private trailY = new Int16Array(TRAIL);
+  private trailI = 0;
+  private penSeed = 12345;
   private step = { x: 0, y: 0, t: 0, sx: 0, sy: 0 };
   boxes: Box[] = [];
   private boxesArea = -1;
@@ -172,7 +210,7 @@ export class Meadow implements Scene {
     this.goal = null;
     this.hopT = -1;
     this.pipHop = 0;
-    this.momoPoke = -1;
+    this.poke.t = -1;
     this.step.t = 0;
     this.pendingBox = -1;
     Closeup.resetStreak(); /* GBA 9.3: back on the map, the close-up count starts again */
@@ -186,6 +224,7 @@ export class Meadow implements Scene {
     }
     this.updateCamera();
     this.boxesFill();
+    this.friendsSetup();
     g.sound.music(AREA_SONG[A.index] ?? SONG.meadow);
     this.updateCamera();
     dbg(`scene meadow pip=${this.pipX},${this.pipY} area=${A.index} cam=${this.camX},${this.camY}`);
@@ -389,6 +428,7 @@ export class Meadow implements Scene {
     this.path = [];
     this.goal = null;
     this.updateCamera();
+    if (this.A) this.trailLine(); /* the line stands behind Pip again */
   }
 
   /** Keeps the save's position up to date without a write on every step. */
@@ -542,6 +582,165 @@ export class Meadow implements Scene {
     return true;
   }
 
+  /* ---- friends: a line behind Pip, the rest roam in the pen ---- */
+
+  /** local random numbers: the pen must not use up the saved ones */
+  private penRand(n: number): number {
+    this.penSeed = (Math.imul(this.penSeed, 1103515245) + 12345) >>> 0;
+    return Math.floor(((this.penSeed >>> 16) * n) / 65536);
+  }
+
+  /** The roomiest of a few random spots, so many friends spread out. */
+  private penTarget(r: Roamer): void {
+    const pen = this.A.pen;
+    if (!pen) return;
+    let best = -1;
+    for (let k = 0; k < PEN_TRIES; k++) {
+      const x = pen[0] + this.penRand(pen[2] - pen[0]);
+      const y = pen[1] + this.penRand(pen[3] - pen[1]);
+      let room = 1 << 30;
+      for (const o of this.pen) {
+        if (o === r) continue;
+        room = Math.min(room, (x - o.x) ** 2 + (y - o.y) ** 2, (x - o.tx) ** 2 + (y - o.ty) ** 2);
+      }
+      if (room > best) {
+        best = room;
+        r.tx = x;
+        r.ty = y;
+      }
+    }
+  }
+
+  /** Lays the follower line out behind Pip (away from where he faces); tries
+   * the other sides when the way back is blocked. */
+  private trailLine(): void {
+    const back = [
+      [0, -1],
+      [0, 1],
+      [-1, 0],
+      [1, 0],
+    ];
+    const order = [
+      [0, 2, 3, 1],
+      [1, 2, 3, 0],
+      [2, 0, 1, 3],
+      [3, 0, 1, 2],
+    ];
+    const px = this.pipX, py = this.pipY;
+    let bx = 0, by = 0;
+    for (const d of order[this.dir]) {
+      let clear = true;
+      for (let k = 1; k <= MAX_FOLLOWERS && clear; k++) {
+        const s = (k * TRAIL_GAP * SPEED) >> 8;
+        for (let t = 4; t <= s && clear; t += 4) clear = !this.blocked(px + back[d][0] * t, py + back[d][1] * t);
+      }
+      if (clear) {
+        [bx, by] = back[d];
+        break;
+      }
+    }
+    this.trailI = 0;
+    for (let i = 0; i < TRAIL; i++) {
+      const t = (this.trailI - i) & (TRAIL - 1), s = (i * SPEED) >> 8;
+      this.trailX[t] = px + bx * s;
+      this.trailY[t] = py + by * s;
+    }
+  }
+
+  private friendsSetup(): void {
+    const c = this.game.collection;
+    const first = this.A.index * 20;
+    this.penSeed = (this.penSeed ^ this.game.frame) >>> 0;
+    this.followIds = [];
+    for (let i = 0; i < MAX_FOLLOWERS; i++) {
+      const id = c.followerGet(i);
+      if (id >= 0 && c.friendFound(id)) this.followIds.push(id);
+    }
+    this.pen = [];
+    if (this.A.pen)
+      for (let id = first; id < first + 20 && this.pen.length < MAX_PEN; id++) {
+        if (!c.friendFound(id) || this.followIds.includes(id)) continue;
+        const r: Roamer = { id, x: 0, y: 0, tx: 0, ty: 0, wait: 0, step: 0, stuck: 0 };
+        this.pen.push(r);
+        this.penTarget(r); /* compared only with the friends placed so far */
+        r.x = r.tx;
+        r.y = r.ty;
+        r.wait = this.penRand(120);
+        this.penTarget(r);
+      }
+    dbg(`friends pen=${this.pen.length} follow=${this.followIds.length}`);
+    this.trailLine();
+  }
+
+  /** True when a step to (nx, ny) takes r closer to a friend that is already near. */
+  private penCrowded(r: Roamer, nx: number, ny: number): boolean {
+    for (const o of this.pen) {
+      if (o === r) continue;
+      const d = (nx - o.x) ** 2 + (ny - o.y) ** 2;
+      if (d < PEN_ROOM * PEN_ROOM && d < (r.x - o.x) ** 2 + (r.y - o.y) ** 2) return true;
+    }
+    return false;
+  }
+
+  private friendsUpdate(pipMoved: boolean): void {
+    let retargets = 0;
+    if (pipMoved) {
+      this.trailI = (this.trailI + 1) & (TRAIL - 1);
+      this.trailX[this.trailI] = this.pipX;
+      this.trailY[this.trailI] = this.pipY;
+    }
+    const f = this.game.frame;
+    this.pen.forEach((r, i) => {
+      if (r.wait > 0) {
+        r.wait--;
+        return;
+      }
+      if (((f + i) & 1) === 0) {
+        /* half a pixel a frame: a calm waddle */
+        let nx = r.x + Math.sign(r.tx - r.x);
+        let ny = r.y + Math.sign(r.ty - r.y);
+        if (this.penCrowded(r, nx, ny) && nx !== r.x && !this.penCrowded(r, nx, r.y)) ny = r.y; /* sidestep */
+        else if (this.penCrowded(r, nx, ny) && ny !== r.y && !this.penCrowded(r, r.x, ny)) nx = r.x;
+        if (this.penCrowded(r, nx, ny)) {
+          if (++r.stuck > 30 && retargets < PEN_RETARGETS) {
+            retargets++; /* give way; find another spot if stuck */
+            r.stuck = 0;
+            this.penTarget(r);
+          }
+        } else {
+          r.x = nx;
+          r.y = ny;
+          r.step++;
+          r.stuck = 0;
+        }
+      }
+      if (r.x === r.tx && r.y === r.ty && retargets < PEN_RETARGETS) {
+        retargets++;
+        r.wait = 60 + this.penRand(180);
+        r.step = 0;
+        this.penTarget(r);
+      }
+    });
+  }
+
+  followerPos(k: number): { x: number; y: number; hop: number } {
+    const t = (this.trailI - (k + 1) * TRAIL_GAP) & (TRAIL - 1);
+    let hop = this.walkT > 0 ? hopOf(this.walkT + k * 5) : 0;
+    const jump = this.hopT >= 0 ? hopH(this.hopT - (k + 1) * HOP_LAG) : 0; /* hops after Pip */
+    if (jump > hop) hop = jump;
+    return { x: this.trailX[t], y: this.trailY[t], hop };
+  }
+
+  /** A tap on a friend: squeak, the squish frame, a hop and a heart. */
+  private pokeFriend(kind: Poke, k: number): void {
+    const id = kind === Poke.Follower ? this.followIds[k] : this.pen[k].id;
+    const at = kind === Poke.Follower ? this.followerPos(k) : this.pen[k];
+    this.poke = { t: 0, kind, k, x: at.x, y: at.y };
+    if (kind === Poke.Pen && this.pen[k].wait < POKE_LEN) this.pen[k].wait = POKE_LEN; /* stands still for its squish */
+    this.game.sound.squeak(friendFlavor(id));
+    dbg(`poke friend ${id}`);
+  }
+
   /* ---- touch ---- */
 
   /** Tap zone radius in art pixels: 32 points, or the thing's own half size. */
@@ -572,6 +771,11 @@ export class Meadow implements Scene {
     });
     const arrow = this.arrowAt();
     if (arrow) consider('arrow', 0, arrow.x + this.camX, arrow.y + this.camY, 8);
+    this.followIds.forEach((_, k) => {
+      const f = this.followerPos(k);
+      consider('follower', k, f.x, f.y - 8, 8);
+    });
+    this.pen.forEach((r, i) => consider('pen', i, r.x, r.y - 8, 8));
     for (const m of this.momos()) consider('momo', m.i, m.x, m.y - 14, 14);
     return best;
   }
@@ -595,13 +799,15 @@ export class Meadow implements Scene {
         this.goToBox(this.arrowBox);
         return;
       }
+      if (hit?.kind === 'follower' || hit?.kind === 'pen') {
+        this.pokeFriend(hit.kind === 'follower' ? Poke.Follower : Poke.Pen, hit.i);
+        return;
+      }
       if (hit?.kind === 'momo') {
-        if (this.momoPoke < 0 || this.momoPoke > 24) {
-          this.momoPoke = 0;
-          this.momoGate = hit.i;
-          this.game.sound.squeak(1);
-          dbg(`poke momo ${hit.i}`);
-        }
+        const m = this.momos().find((o) => o.i === hit.i)!;
+        this.poke = { t: 0, kind: Poke.Momo, k: hit.i, x: m.x, y: m.y };
+        this.game.sound.boing();
+        dbg(`poke momo ${hit.i}`);
         return;
       }
       this.pendingBox = -1;
@@ -647,10 +853,11 @@ export class Meadow implements Scene {
         this.pipHop = 0;
       }
     }
-    if (this.momoPoke >= 0 && ++this.momoPoke > 40) this.momoPoke = -1;
+    if (this.poke.t >= 0 && ++this.poke.t > POKE_LEN) this.poke.t = -1;
     const wasX = this.px8, wasY = this.py8;
     if (this.followPath()) this.walkT++;
     else this.walkT = 0;
+    this.friendsUpdate(this.px8 !== wasX || this.py8 !== wasY); /* the line follows real steps only */
     if (this.px8 !== wasX || this.py8 !== wasY) {
       this.stillT = 0;
       this.posDirty = true;
@@ -730,6 +937,42 @@ export class Meadow implements Scene {
     });
   }
 
+  private drawFriends(): void {
+    const art = this.game.art;
+    const n = art.index.names;
+    const keys = Object.keys(n.species);
+    const sq = (id: number, kind: Poke, k: number, x: number, y: number, hop: number) => {
+      let frame = 'idle';
+      const p = this.poke;
+      if (p.t >= 0 && p.kind === kind && p.k === k) {
+        p.x = x;
+        p.y = y;
+        const t = p.t - POKE_SQUISH;
+        if (t < 0) frame = 'squish';
+        else if (t < 12) hop = idiv(t * (12 - t), 9);
+      }
+      const sx = x - this.camX, sy = y - this.camY;
+      const name = `sq/${keys[friendSpecies(id)]}/${n.flavors[friendFlavor(id)]}/16/${frame}`;
+      this.world.push({ depth: y, draw: (ctx) => art.draw(ctx, name, sx - 8, sy - 15 - hop) });
+      this.shadow(y - 1, sx, sy);
+    };
+    this.pen.forEach((r, i) => sq(r.id, Poke.Pen, i, r.x, r.y, r.wait > 0 ? 0 : hopOf(r.step)));
+    this.followIds.forEach((id, k) => {
+      const f = this.followerPos(k);
+      sq(id, Poke.Follower, k, f.x, f.y, f.hop);
+    });
+    const p = this.poke;
+    if (p.t >= 4 && p.kind !== Poke.Momo) {
+      const t = p.t - 4;
+      if (!(t > 30 && t & 2)) {
+        /* the heart floats up and blinks out */
+        const wob = idiv(isin(t * 2) * 2, 256);
+        const hx = p.x - this.camX - 4 + wob, hy = p.y - this.camY - 20 - 8 - idiv(t, 2);
+        this.ui.push((ctx) => art.draw(ctx, 'heart8', hx, hy));
+      }
+    }
+  }
+
   /** The guide arrow: over everything, blinking, from Pip toward the nearest box. */
   private drawArrow(ctx: CanvasRenderingContext2D): void {
     const a = this.arrowAt();
@@ -765,10 +1008,11 @@ export class Meadow implements Scene {
     const f = this.game.frame;
     for (const m of this.momos()) {
       let x = m.x, hop = 0;
-      if (this.momoPoke >= 0 && this.momoGate === m.i && this.momoPoke < 24) {
-        const t = this.momoPoke % 12;
+      const p = this.poke;
+      if (p.t >= 0 && p.kind === Poke.Momo && p.k === m.i && p.t < 24) {
+        const t = p.t % 12; /* tickled: giggles and hops */
         hop = idiv(t * (12 - t), 6);
-        x += (this.momoPoke / 3) & 1;
+        x += (p.t / 3) & 1;
       }
       const sx = x - this.camX, sy = m.y - this.camY;
       const breathe = hop ? 0 : (f / 40) & 1;
@@ -802,6 +1046,7 @@ export class Meadow implements Scene {
     this.drawPip();
     this.drawMomos();
     this.drawBoxes();
+    this.drawFriends();
     this.world.sort((a, b) => a.depth - b.depth).forEach((w) => w.draw(ctx));
     this.ui.forEach((d) => d(ctx));
     if (overlay) ctx.drawImage(overlay, -cx, -cy);

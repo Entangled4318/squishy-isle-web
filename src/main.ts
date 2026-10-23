@@ -78,6 +78,10 @@ void game.boot(first).then(() => {
     blocked: (x: number, y: number) => meadow.blocked(x, y),
     boxes: () => meadow.boxes.map((b) => (b.spot < 0 ? null : meadow.A.spots[b.spot])),
     arrow: () => meadow.arrowBox,
+    friends: () => ({
+      pen: meadow.pen.map((r) => [r.x, r.y, r.id]),
+      follow: meadow.followIds.map((id, k) => [meadow.followerPos(k).x, meadow.followerPos(k).y, id]),
+    }),
     stage: () => ({ popT: open.popT, landed: closeup.landedT, squishes: closeup.squishes, leave: closeup.leaveT }),
   };
 });

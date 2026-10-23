@@ -13,7 +13,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
   default (ask before the switch: it replaces a working page).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
 - Owner approved the M4 sub-steps below and said: proceed with all
-  sub-steps unless you need me. Next: sub-step 5, followers and the pen. Stop after each sub-step with a short report.
+  sub-steps unless you need me. Next: sub-step 6, shelf and close-up. Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
   iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
@@ -31,7 +31,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
    movement assist, the hop. Owner added: Momo asleep at the gate. Done.
 4. Containers and reveal: containers on the map, the guide arrow, the open
    screen, the reveal, the counter pill, a save at each reveal. Done.
-5. Followers and the pen: the follower line, the pen, the poke.
+5. Followers and the pen: the follower line, the pen, the poke. Done.
 6. Shelf and close-up: shelf pages, close-up, the home button, the other
    save moments.
 7. Tests and release: the touch mash test, the first play scripts, the
@@ -47,7 +47,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
 | M2. Art pipeline | Built. Owner picked 16 px for the map |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
-| M4. Core loop in the meadow | Sub-steps 1 to 4 of 7 done (title, map, moves, containers and reveal), on branch `claude/magical-euler-0drmuw` |
+| M4. Core loop in the meadow | Sub-steps 1 to 5 of 7 done (title, map, moves, containers, friends), on branch `claude/magical-euler-0drmuw` |
 
 ## Owner notes
 
@@ -302,6 +302,25 @@ west of the gate). To judge on a device: walk speed and the drag feel.
 Score: containers and reveal 8.5 (first pass 8: the arrow blinked per
 browser frame, so twice as fast on a 120 Hz iPad; the reveal's side
 bands showed half name pills; the open hearts touched).
+
+13. **Friends on the map** (in `meadow.ts`, GBA `viewer.c`): up to 3
+    followers (the save's line) walk 14 of Pip's steps apart on a 64-step
+    trail, hop while walking and after Pip's hop; the line is laid out
+    behind Pip on entry (other sides if blocked) and after a jump. The
+    area's other found friends roam in the pen: the roomiest of 10 random
+    spots, half a pixel a frame, sidestep or give way when crowded (13
+    px), at most 3 new targets a frame, local random numbers (the save's
+    stay untouched). All 16 px, as the owner chose. A tap on a friend
+    (zone as for Pip) squishes it at once: squeak in its flavor, the
+    squish frame, a hop, a heart that floats up and blinks out; a pen
+    friend stands still for it. Momo's tickle now uses the boing (GBA).
+14. **Tests** `tests/e2e/friends.spec.ts` (3 a device): 3 follow and the
+    rest stay in the pen, the line trails Pip; a tap on a pen friend and
+    on a follower; a full page has no boxes and 17 friends spread in the
+    pen with none on top of another. 165 unit and 62 play checks pass.
+
+Score: friends 8.5 (first pass 8: after a jump the line stayed where
+Pip had been).
 
 ## Commands
 

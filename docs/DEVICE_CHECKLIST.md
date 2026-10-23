@@ -83,6 +83,32 @@ chip. If you know the songs from the Brick or mGBA, compare by ear.
    back.
 6. On the tap test page (the main address), each tap gives the GBA chime.
 
-## Checklists 4 and later
+## Checklist 4 (milestone 4: the meadow loop)
 
-Added at the end of milestones 4 to 7.
+Address: https://entangled4318.github.io/squishy-isle-web/?title
+
+The game opens at this address until you agree to make it the main page.
+Do these first yourself, then give it to your child.
+
+1. The letters drop in. Tap once: the hello jingle plays and the letters
+   hop. Tap again: the meadow opens. Note if the first tap had no sound.
+2. Tap the grass: Pip walks there. Tap behind the house: Pip walks round
+   it. Put a finger down and move it: Pip follows. Note if the walk
+   feels too slow or too fast.
+3. Tap Pip: he hops. Walk to the bridge at the east edge: Momo sleeps
+   there and Pip cannot pass. Tap Momo: Momo giggles.
+4. Tap a gift box: Pip walks to it and it opens. On the open screen, tap
+   three times; the lid pops. Then tap the friend three times; it hops
+   away. Wait 5 s without a tap on the map: an arrow points to a box.
+5. Tap the round button at the top left: the shelf. Tap the tabs, swipe
+   sideways, tap a friend (close-up), tap a grey shape ("Find me!"). The
+   house button goes back to the map.
+6. Close the app and open it again: Continue, and Pip is where he was.
+7. Turn the iPad to portrait and back: nothing is cut off, the buttons
+   stay clear of the notch and the home bar.
+8. Give it to your child. Note what they tap that does nothing, where
+   they get stuck, and what makes them laugh.
+
+## Checklists 5 and later
+
+Added at the end of milestones 5 to 7.

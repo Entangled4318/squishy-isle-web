@@ -13,7 +13,12 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
   default (ask before the switch: it replaces a working page).
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
 - Owner approved the M4 sub-steps below and said: proceed with all
-  sub-steps unless you need me. Next: sub-step 7, tests and release. Stop after each sub-step with a short report.
+  sub-steps unless you need me. All 7 are done. Open question to the
+  owner: make the title the default page (it replaces the tap test page,
+  which device checklist 1 uses). Ask before the switch.
+- Owner to do: device checklist 4 (the meadow loop at `?title`) and the
+  first play test with the child.
+- Next work after the owner's notes: M5 (`docs/PLAN.md`). Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
   iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
@@ -36,7 +41,7 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
    save moments. Done.
 7. Tests and release: the touch mash test, the first play scripts, the
    `check_text.py` port, then the merge to `main` for the first play test
-   with the child.
+   with the child. Done.
 
 ## Status
 
@@ -354,13 +359,34 @@ Score: shelf, close-up and buttons 8.5 (first pass 7.5: on an iPad in
 portrait the band above the shelf repeated the active tab as a pink
 stripe; a flat band color was a shade off the wall's own color).
 
+19. **Text checks** `tests/unit/text.test.ts` (port of the GBA
+    `check_text.py`): every name, area name and label fits its pill,
+    button or counter in the web font, and every letter has a glyph.
+20. **Toddler mash test** `tests/e2e/mash.spec.ts` (after the GBA
+    `mash.py`): 15000 frames from the title, from a blank save, one
+    meadow friend left and a full meadow: random taps, taps aimed at
+    boxes, drags, palms, long holds, idle spells, mashing and the corner
+    button. Checks: no page error, the open screen and the reveal end by
+    themselves in time, friends count up one at a time and never twice, a
+    new game only from an empty save, Pip never in a wall or a box, the
+    save loads after a reload with the same friends.
+21. **Play script** `tests/e2e/loop.spec.ts`: a new game to all 20 meadow
+    friends by taps only (about 3 minutes of play), then a reload loads
+    them. Device checklist 4 is in `docs/DEVICE_CHECKLIST.md`.
+22. 170 unit and 76 play checks pass.
+
+Scores (M4): title 8.5, map and camera 8.5, movement 8.5, containers and
+reveal 8.5, friends 8.5, shelf and buttons 8.5, tests 8.5 (the mash test
+passed on the first run; it does not yet rotate the screen or hide the
+app, which M7's long soak adds).
+
 ## Commands
 
     npm install
     pip install numpy pillow
     npm run assets                      # icons into public/gen
-    npm run typecheck && npm test       # 130 unit checks
-    npm run build && npm run e2e        # 22 play checks
+    npm run typecheck && npm test       # 170 unit checks
+    npm run build && npm run e2e        # 76 play checks
     python3 tests/check_map.py OUTDIR   # 20 map checks
     # fixtures from the GBA C code (needs ../squishy-isle):
     gcc -O2 -I ../squishy-isle/rom/src tests/fixtures/gen_rules.c -o build/gen_rules

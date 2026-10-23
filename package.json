@@ -1,0 +1,24 @@
+{
+  "name": "squishy-isle-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Squishy Isle for the browser: a calm collecting game for toddlers.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "assets": "python3 tools/export_web.py public/gen",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "check": "npm run typecheck && npm run test && npm run build && npm run e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

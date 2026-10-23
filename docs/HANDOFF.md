@@ -2,13 +2,30 @@
 
 Read `CLAUDE.md` and `docs/PLAN.md` first.
 
+## Start here (next session)
+
+- Live site: https://entangled4318.github.io/squishy-isle-web/ (Pages is
+  on; each push to `main` deploys). Test pages: `?gallery`, `?sound`.
+- Open question to the owner: the squishy size on the map. Claude
+  recommended 16 px (the GBA size): at 32 px the friends are bigger than
+  Pip and crowd the 20-friend pen, and tap zones are 64 points either way.
+  Ask this first if the owner has not answered.
+- Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
+  iPhone and an iPad. Fix what they find before or during M4.
+- Next work: M4, the core loop in Blossom Meadow (`docs/PLAN.md`). Give
+  the owner an overview of the M4 sub-steps and get approval first.
+- New container: `npm install`, `pip install numpy pillow`,
+  `npm run assets`, then `npm run check`. The GBA repo
+  (`Entangled4318/squishy-isle`) is the reference for M4: port
+  `rom/src/viewer.c`, `title.c`, `open.c`, `closeup.c`, `shelf.c`.
+
 ## Status
 
 | Step | State |
 | --- | --- |
 | Planning steps 1 to 6 | Done. Decisions and milestones in `docs/PLAN.md` |
 | Repo setup | Done. `tools/` from GBA v1.6 (`1d99c2e`), `tests/check_map.py` (20 checks) |
-| M1. Foundations | Built; CI green. Waits for the owner: turn on Pages, then device checklist 1 |
+| M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
 | M2. Art pipeline | Built. Waits for the owner: pick the squishy size (gallery page 1) |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
 | M4. Core loop in the meadow | Next, after the owner picks the squishy size |

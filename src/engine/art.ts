@@ -119,6 +119,12 @@ export class Art {
     return Math.max(0, w - 1);
   }
 
+  /** Text with a 1 px outline all round, as the GBA's strip_print draws it. */
+  textOutlined(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, color: string, outline: string): void {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) this.text(ctx, s, x + dx, y + dy, outline);
+    this.text(ctx, s, x, y, color);
+  }
+
   /** Draws text in the 5x7 font; y is the top of the capitals. */
   text(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, color: string): void {
     const g = this.index.font.glyphs;

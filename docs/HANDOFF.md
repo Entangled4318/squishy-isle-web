@@ -5,19 +5,38 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 ## Start here (next session)
 
 - Live site: https://entangled4318.github.io/squishy-isle-web/ (Pages is
-  on; each push to `main` deploys). Test pages: `?gallery`, `?sound`.
-- Open question to the owner: the squishy size on the map. Claude
-  recommended 16 px (the GBA size): at 32 px the friends are bigger than
-  Pip and crowd the 20-friend pen, and tap zones are 64 points either way.
-  Ask this first if the owner has not answered.
+  on; each push to `main` deploys). Test pages: `?gallery`, `?sound`,
+  `?title` (the game, M4).
+- M4 work is on the branch `claude/magical-euler-0drmuw`. It merges to
+  `main` at the end of M4. The tap test stays the default page until the
+  owner has done device checklist 1 and agrees to make the title the
+  default (ask before the switch: it replaces a working page).
+- Owner decision: the squishy size on the map is **16 px** (the GBA size).
+- Owner approved the M4 sub-steps below. Next: sub-step 2, the meadow map
+  and the camera. Stop after each sub-step with a short report.
 - Owner to do: device checklists 1 to 3 (`docs/DEVICE_CHECKLIST.md`) on an
-  iPhone and an iPad. Fix what they find before or during M4.
-- Next work: M4, the core loop in Blossom Meadow (`docs/PLAN.md`). Give
-  the owner an overview of the M4 sub-steps and get approval first.
+  iPhone and an iPad. Fix what they find inside the closest sub-step.
 - New container: `npm install`, `pip install numpy pillow`,
-  `npm run assets`, then `npm run check`. The GBA repo
+  `npm run assets`, then `npm run check`. If Playwright cannot find
+  `chromium_headless_shell-1194`, see "Traps found". The GBA repo
   (`Entangled4318/squishy-isle`) is the reference for M4: port
   `rom/src/viewer.c`, `title.c`, `open.c`, `closeup.c`, `shelf.c`.
+
+## M4 sub-steps (approved)
+
+1. Title screen. Done.
+2. Meadow map and camera: sharp whole-number scale, more island along the
+   long side, both orientations.
+3. Pip moves: tap to walk by the shortest path, drag to steer, the
+   movement assist, the hop.
+4. Containers and reveal: containers on the map, the guide arrow, the open
+   screen, the reveal, the counter pill, a save at each reveal.
+5. Followers and the pen: the follower line, the pen, the poke.
+6. Shelf and close-up: shelf pages, close-up, the home button, the other
+   save moments.
+7. Tests and release: the touch mash test, the first play scripts, the
+   `check_text.py` port, then the merge to `main` for the first play test
+   with the child.
 
 ## Status
 
@@ -26,9 +45,9 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | Planning steps 1 to 6 | Done. Decisions and milestones in `docs/PLAN.md` |
 | Repo setup | Done. `tools/` from GBA v1.6 (`1d99c2e`), `tests/check_map.py` (20 checks) |
 | M1. Foundations | Built; CI green; Pages on. Waits for the owner: device checklist 1 |
-| M2. Art pipeline | Built. Waits for the owner: pick the squishy size (gallery page 1) |
+| M2. Art pipeline | Built. Owner picked 16 px for the map |
 | M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
-| M4. Core loop in the meadow | Next, after the owner picks the squishy size |
+| M4. Core loop in the meadow | Sub-step 1 of 7 done (title), on branch `claude/magical-euler-0drmuw` |
 
 ## Owner notes
 
@@ -161,6 +180,39 @@ round 803.6 samples to 804 and drift; record inside `frameTick`). Lead
 and bass an octave or a fifth apart add up by phase, so loudness is
 compared per voice, as on the GBA.
 
+## M4 progress
+
+1. **Title** `src/scenes/title.ts`, from the GBA `title.c`: the letters
+   drop and bounce with a chime each, four friends hop one at a time, Pip,
+   six twinkles, the letters bob. One button: "Play" on an empty save
+   (makes a new game from the frame, the save's random number and the
+   boot count), "Continue" when the save has friends. No "New game" here
+   (M5 grown-up page). Sound starts only on a touch, so the first tap of a
+   visit says hello (jingle, title song, the letters hop) and the next tap
+   plays; a tap during the drop ends the drop and is that hello. A tap
+   always counts as the hello, so a device with no sound still plays.
+   10 frames after the hello, taps only sparkle (GBA `menu_wait`). The
+   version and commit show small at the bottom, for a grown-up.
+   `src/scenes/meadow.ts` is a stand-in until sub-step 2 (a tap goes back
+   to the title).
+2. **Fixed screens** `src/scenes/backdrop.ts`: a 240 x 160 backdrop draws
+   at its own whole-number scale, centred (in portrait it is smaller than
+   the view's scale, so it fits). The side bands show the backdrop
+   mirrored, the bands above and below repeat the edge rows.
+   `toFixed()` moves a touch into backdrop pixels. Also
+   `src/engine/gba.ts` (`isin`, C integer division) and `textOutlined()`.
+3. **Sound before the first touch** is now dropped, not queued: the queue
+   played a burst of the title's letter chimes on the first tap.
+4. **Tests** `tests/e2e/title.spec.ts` (3 checks a device): the drop ends
+   by itself at frame 129, hello then play, the 10-frame wait, a new game
+   on an empty save, back from the meadow stand-in; a real tap during the
+   drop; Continue keeps the friends. 159 unit and 32 play checks pass.
+
+Score: title 8.5 (first pass 7.5: the side bands stretched the edge
+column into dark stripes where the pink tree touches the edge; the
+version text crossed the island's edge and then touched a heart; with no
+sound, the game could never leave the title).
+
 ## Commands
 
     npm install
@@ -187,5 +239,10 @@ registers the service worker, `&hint=1` shows the install hint.
 - Playwright is pinned to 1.56.1: the container's Chromium is build 1194.
 - The e2e helper `drive()` sends its function as text: values from outside
   must go in its `arg`.
+- This container's Chromium was build 1243, not 1194. Without changing
+  the repo, link it for the run:
+  `P=/tmp/pwb; mkdir -p $P/chromium_headless_shell-1194/chrome-linux` then
+  `ln -s /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell $P/chromium_headless_shell-1194/chrome-linux/headless_shell`
+  and run with `PLAYWRIGHT_BROWSERS_PATH=$P`.
 - C does not fix the order of a call's arguments: the fixture generator
   makes one `game_rand()` call per statement.

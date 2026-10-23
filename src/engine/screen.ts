@@ -123,3 +123,20 @@ export class Screen {
     this.ctx.imageSmoothingEnabled = false;
   }
 }
+
+/** Where a fixed w x h screen (the GBA's 240 x 160 backdrops) goes: the
+ * largest whole-number scale that fits the canvas, centred. In portrait
+ * this scale is smaller than the view's, so the screen still fits. */
+export interface FixedLayout {
+  k: number;
+  /** device-pixel offset of the screen's top-left corner */
+  ox: number;
+  oy: number;
+  w: number;
+  h: number;
+}
+
+export function fixedLayout(v: View, w = MIN_LONG, h = MIN_SHORT): FixedLayout {
+  const k = fitScale(v.devW, v.devH, w, h);
+  return { k, ox: Math.floor((v.devW - w * k) / 2), oy: Math.floor((v.devH - h * k) / 2), w, h };
+}

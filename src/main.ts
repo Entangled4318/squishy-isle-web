@@ -8,6 +8,8 @@ import { logLines, setLogEcho } from './engine/log';
 import { TapTest } from './scenes/taptest';
 import { Gallery } from './scenes/gallery';
 import { SoundTest } from './scenes/soundtest';
+import { Title } from './scenes/title';
+import { Meadow } from './scenes/meadow';
 import { isIOS, showInstallHint } from './shell/install-hint';
 import { standalone } from './scenes/taptest';
 import { encodeSave } from './rules/save-data';
@@ -32,7 +34,16 @@ declare global {
   }
 }
 
-const first = params.has('gallery') ? () => new Gallery(game) : params.has('sound') ? () => new SoundTest(game) : () => new TapTest(game);
+const title = (): Title => new Title(game, () => new Meadow(game, title));
+/* ?title is the game (M4). The tap test stays the default page until the
+ * owner has done device checklist 1 and agrees to the switch. */
+const first = params.has('gallery')
+  ? () => new Gallery(game)
+  : params.has('sound')
+    ? () => new SoundTest(game)
+    : params.has('title')
+      ? title
+      : () => new TapTest(game);
 
 void game.boot(first).then(() => {
   if (!testMode) return;
@@ -53,5 +64,6 @@ void game.boot(first).then(() => {
     flush: () => game.chip.flush(),
     sound: () => game.sound.state(),
     unlock: () => game.sound.unlock(),
+    addFriend: (id: number) => game.collection.add(id),
   };
 });

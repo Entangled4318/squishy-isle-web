@@ -96,7 +96,11 @@ export class Sound {
       });
   }
 
+  /** Before the first touch there is no sound at all: commands are dropped,
+   * so a scene that plays sounds before the first tap does not get a burst
+   * of them on that tap. After it they wait for the worklet. */
   private send(c: SoundCmd): void {
+    if (!this.ctx) return;
     if (this.node) this.node.port.postMessage(c);
     else if (this.queue.length < 32) this.queue.push(c);
   }

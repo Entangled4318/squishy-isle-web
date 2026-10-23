@@ -43,7 +43,14 @@ const meadow = new Meadow(game);
 const reveal = new Closeup(game, () => meadow);
 const shelf: Shelf = new Shelf(game, () => meadow, (id) => closeup.show(id, false));
 const closeup = new Closeup(game, () => meadow, () => shelf);
-meadow.shelfScene = () => shelf;
+meadow.shelfScene = () => {
+  shelf.pick = false;
+  return shelf;
+};
+meadow.pickScene = () => {
+  shelf.pick = true;
+  return shelf;
+};
 const open = new Open(game, () => meadow.open, () => reveal.show(meadow.open.friend, true), () => meadow);
 meadow.openScene = () => open;
 const title = (): Title => new Title(game, () => meadow, () => meadow.reset());
@@ -90,6 +97,7 @@ void game.boot(first).then(() => {
     }),
     stage: () => ({ popT: open.popT, landed: reveal.landedT, squishes: reveal.squishes, leave: reveal.leaveT }),
     shelfPage: () => shelf.page,
+    followers: () => [0, 1, 2].map((i) => game.collection.followerGet(i)),
     /** a backdrop pixel as view art pixels (room: the screen keeps room for the home button) */
     fixedToView: (x: number, y: number, room: boolean) => {
       const v = screen.view;

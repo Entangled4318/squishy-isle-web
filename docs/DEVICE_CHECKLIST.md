@@ -109,7 +109,13 @@ Do these first yourself, then give it to your child.
 6. Close the app and open it again: Continue, and Pip is where he was.
 7. Turn the iPad to portrait and back: nothing is cut off, the buttons
    stay clear of the notch and the home bar.
-8. Give it to your child. Note what they tap that does nothing, where
+8. The pen: with at least one friend, a heart bobs over the wooden sign
+   by the pen. Tap the sign: Pip walks there and the shelf opens with
+   "Who follows Pip?". Tap a friend with no heart: it follows Pip (with 3
+   already, the oldest goes to the pen). Tap a friend with a heart: it
+   goes to the pen. The house button goes back: the line and the pen show
+   your choice, also after you close and open the app.
+9. Give it to your child. Note what they tap that does nothing, where
    they get stuck, and what makes them laugh.
 
 ## Checklists 5 and later

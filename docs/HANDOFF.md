@@ -13,8 +13,8 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 - Owner decision: the squishy size on the map is **16 px** (the GBA size).
 - Owner approved the M4 sub-steps below; all 7 are done.
 - Owner play test note: "I couldn't store animals in the pen, nor figure
-  out a way to swap them". The heart sign picker (GBA pick mode at the
-  pen sign) is the first item of M5. Claude proposed to build it next.
+  out a way to swap them". Done: the heart sign picker (the first item of
+  M5, built early with the owner's approval). See "M5 progress".
 - Owner to do: device checklist 4 (the meadow loop) and the
   first play test with the child.
 - Next work after the owner's notes: M5 (`docs/PLAN.md`). Stop after each sub-step with a short report.
@@ -378,6 +378,28 @@ Scores (M4): title 8.5, map and camera 8.5, movement 8.5, containers and
 reveal 8.5, friends 8.5, shelf and buttons 8.5, tests 8.5 (the mash test
 passed on the first run; it does not yet rotate the screen or hide the
 app, which M7's long soak adds).
+
+## M5 progress
+
+1. **Heart sign picker** (owner's play test: no way to store or swap
+   friends). On the map, a heart bobs over the pen's sign once the area
+   has a friend (the GBA showed the A bubble instead). A tap on the sign
+   walks Pip there; at the GBA sign zone the shelf opens in pick mode
+   (`meadow.ts` `goToSign`, `updateSign`). Pick mode (`shelf.ts`): this
+   area's page, "Who follows Pip?" until the first tap, heart badges on
+   followers, a tap on a found friend adds it to the front of the line
+   (a 4th sends the oldest to the pen, GBA `follower_add`) or sends a
+   follower to the pen (`follower_remove`); each pick saves. Silhouettes
+   say "Find me!". Tabs and swipes rest in pick mode (GBA: this page
+   only). The house button goes back; the map lays out the new line and
+   pen. Tests `tests/e2e/picker.spec.ts` (3 a device): the walk to the
+   sign, add, swap, remove, the map and the save after a reload; no
+   heart and no picker without friends; a 400-tap mash in the picker
+   never makes more than 3 followers or a follower not found. 170 unit
+   and 84 play checks pass. Device checklist 4 step 8.
+
+Score: picker 8.5 (first pass 8.5; nothing found in the screenshots or
+the tests). To judge on a device: whether the child finds the sign.
 
 ## Commands
 

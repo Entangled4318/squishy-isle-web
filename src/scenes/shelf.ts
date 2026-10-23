@@ -4,7 +4,11 @@
  * - a tap on a found friend opens its close-up;
  * - a tap on a silhouette wiggles it, with "Find me!" in the name pill;
  * - the home button goes back to the map.
- * The pen sign's pick mode is M5. The bands round the shelf are the
+ * Pick mode (from the heart sign by the pen, GBA pick mode): this area's
+ * page with "Who follows Pip?"; a tap on a found friend adds it to the
+ * line or sends it back to the pen (up to 3 follow; a 4th sends the
+ * oldest to the pen); hearts mark the followers; each pick saves. The
+ * tabs rest in pick mode (the GBA picks on this page only). The bands round the shelf are the
  * plain wall (a mirrored shelf, or the tabs' edge rows, look odd). */
 import { Game } from '../game';
 import { Scene } from '../engine/scenes';
@@ -31,6 +35,10 @@ export class Shelf implements Scene {
   private label = '';
   private swipe: { x: number; y: number; done: boolean } | null = null;
   private homePress = 0;
+  /** set before the scene opens: the heart sign's picker */
+  pick = false;
+  private popId = -1;
+  private popT = 0;
 
   constructor(
     private game: Game,
@@ -47,15 +55,29 @@ export class Shelf implements Scene {
     for (let i = 0; i < 4; i++) void g.art.image(g.art.index.screens[`shelf${i}`]);
     g.sound.music(SONG.shelf); /* music box; the close-up keeps it */
     const area = g.collection.s.area;
-    if (area !== this.pageArea) {
+    if (this.pick || area !== this.pageArea) {
       this.page = area < 4 ? area : 0; /* after a walk to another area, start on its page */
       this.pageArea = area;
     }
     this.wiggle = null;
     this.homePress = 0;
     this.swipe = null;
+    this.sel = null;
+    this.popId = -1;
+    if (this.pick) {
+      /* the frame starts on the first follower of this page */
+      const c = g.collection;
+      for (let i = 0; i < 3; i++) {
+        const id = c.followerGet(i);
+        if (id >= 0 && Math.floor(id / 20) === this.page) {
+          this.sel = [Math.floor(id / 5) - this.page * 4, id % 5];
+          break;
+        }
+      }
+    }
     this.setLabel();
-    dbg(`scene shelf page=${this.page}`);
+    if (this.pick) this.label = 'Who follows Pip?';
+    dbg(`scene shelf page=${this.page} pick=${this.pick ? 1 : 0}`);
   }
 
   private have(r: number, c: number): boolean {
@@ -83,13 +105,14 @@ export class Shelf implements Scene {
   update(touches: TouchEvt[]): void {
     const g = this.game;
     if (this.homePress > 0) this.homePress--;
+    if (this.popT > 0) this.popT--;
     if (this.wiggle && ++this.wiggle.t > 30) this.wiggle = null;
     for (const t of touches) {
       const p = toFixed(g, t.x, t.y, BUTTON_ROOM);
       if (t.kind === 'down') {
         this.swipe = { x: p.x, y: p.y, done: false };
         this.tap(t, p.x, p.y);
-      } else if (t.kind === 'move' && this.swipe && !this.swipe.done) {
+      } else if (t.kind === 'move' && this.swipe && !this.swipe.done && !this.pick) {
         const dx = p.x - this.swipe.x, dy = p.y - this.swipe.y;
         if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.5) {
           this.swipe.done = true;
@@ -105,13 +128,17 @@ export class Shelf implements Scene {
     if (buttonHit(g, t.x, t.y)) {
       this.homePress = 8;
       g.sound.chime(2);
-      dbg('shelf home');
+      if (this.pick) {
+        const c = g.collection;
+        dbg(`pick done ${c.followerGet(0)} ${c.followerGet(1)} ${c.followerGet(2)}`);
+      } else dbg('shelf home');
+      this.pick = false;
       g.scenes.go(this.toMeadow());
       return;
     }
     const v = g.screen.view;
     const zone = (32 * v.dpr) / v.k; /* 32 points, in view pixels (about the same in screen pixels) */
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 4 && !this.pick; i++) {
       const cx = TAB_X + i * TAB_DX + 14;
       if (Math.abs(x - cx) <= Math.max(14, zone / 2) && y <= 24 + 4) {
         this.turn(i);
@@ -121,6 +148,10 @@ export class Shelf implements Scene {
     const L = this.L;
     const c = Math.floor((x - L.x0) / L.cw), r = Math.floor((y - L.y0) / L.ch);
     if (c < 0 || c >= L.cols || r < 0 || r >= L.rows) return; /* the wall: a sparkle only */
+    if (this.pick && this.have(r, c)) {
+      this.pickFriend(r, c);
+      return;
+    }
     if (this.have(r, c)) {
       this.sel = [r, c];
       this.setLabel();
@@ -135,6 +166,27 @@ export class Shelf implements Scene {
       g.sound.blip();
       dbg(`shelf find me ${friendId(this.page * 4 + r, c)}`);
     }
+  }
+
+  /** Pick mode: the friend joins the line, or goes back to the pen. Saves. */
+  private pickFriend(r: number, c: number): void {
+    const g = this.game;
+    const col = g.collection;
+    const id = friendId(this.page * 4 + r, c);
+    this.sel = [r, c];
+    this.setLabel();
+    if (col.followerHas(id)) {
+      col.followerRemove(id);
+      g.sound.chime(1);
+      dbg(`pick remove ${id}`);
+    } else {
+      col.followerAdd(id);
+      g.sound.squeak(c);
+      this.popId = id;
+      this.popT = 12;
+      dbg(`pick add ${id}`);
+    }
+    col.save();
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
@@ -172,6 +224,15 @@ export class Shelf implements Scene {
             }
           }
         if (this.sel) art.draw(ctx, 'frame', L.x0 + this.sel[1] * L.cw - 1, L.y0 + this.sel[0] * L.ch - 1);
+        if (this.pick)
+          for (let i = 0; i < 3; i++) {
+            /* a heart badge on the corner of each friend that follows Pip */
+            const id = g.collection.followerGet(i);
+            if (id < 0 || Math.floor(id / 20) !== this.page) continue;
+            let hy = L.y0 + (Math.floor(id / 5) - this.page * 4) * L.ch - 3;
+            if (id === this.popId && this.popT > 0) hy -= idiv(this.popT * (12 - this.popT), 6); /* a small hop when chosen */
+            art.draw(ctx, 'openui/heart_on', L.x0 + (id % 5) * L.cw - 2 + 1, hy + 1);
+          }
         const px = 232 - L.pillW;
         art.text(ctx, this.label, px + ((L.pillW - art.textWidth(this.label)) >> 1), 7, INK);
       },

@@ -107,7 +107,7 @@ const hopOf = (step: number) => {
 
 const hopH = (t: number) => (t >= 0 && t < HOP_LEN ? idiv(t * (HOP_LEN - t), 10) : 0); /* up to 6 px */
 
-type Thing = 'pip' | 'momo' | 'box' | 'arrow' | 'follower' | 'pen';
+type Thing = 'pip' | 'momo' | 'box' | 'arrow' | 'follower' | 'pen' | 'sign';
 
 export const enum Dir {
   Down,
@@ -172,6 +172,10 @@ export class Meadow implements Scene {
   /** the open screen and the shelf (set by main.ts) */
   openScene: (() => Scene) | null = null;
   shelfScene: (() => Scene) | null = null;
+  /** the heart sign's picker (the shelf in pick mode, set by main.ts) */
+  pickScene: (() => Scene) | null = null;
+  /** a tap chose the heart sign: the picker opens when Pip arrives */
+  pendingSign = false;
   private shelfPress = 0;
   camX = 0;
   camY = 0;
@@ -216,6 +220,7 @@ export class Meadow implements Scene {
     this.poke.t = -1;
     this.step.t = 0;
     this.pendingBox = -1;
+    this.pendingSign = false;
     Closeup.resetStreak(); /* GBA 9.3: back on the map, the close-up count starts again */
     const n = g.collection.foundInArea(A.index);
     if (this.countSeen & (1 << A.index) && n > this.countLast[A.index]) this.countHop = 40; /* not when the area changes */
@@ -376,9 +381,59 @@ export class Meadow implements Scene {
     }
   }
 
+  /* ---- the heart sign by the pen: it opens the picker (GBA pick mode) ---- */
+
+  /** The sign works once this area has a friend (GBA at_sign). */
+  private signOn(): boolean {
+    return !!this.A.sign && this.game.collection.foundInArea(this.A.index) > 0;
+  }
+
+  /** Pip stands by the sign (the GBA zone: above it too, it blocks at y - 8). */
+  private atSign(): boolean {
+    const sg = this.A.sign;
+    if (!sg || !this.signOn()) return false;
+    const px = this.pipX, py = this.pipY;
+    return px > sg[0] - 20 && px < sg[0] + 20 && py > sg[1] - 18 && py < sg[1] + 22;
+  }
+
+  private goToSign(): void {
+    this.pendingSign = true;
+    this.pendingBox = -1;
+    dbg('tap sign');
+    if (!this.atSign()) this.walkTo(this.A.sign![0], this.A.sign![1] + 10);
+  }
+
+  private updateSign(): void {
+    if (!this.pendingSign || this.game.scenes.fading()) return;
+    if (this.atSign()) {
+      this.pendingSign = false;
+      this.path = [];
+      this.goal = null;
+      this.dir = Dir.Down;
+      this.game.sound.chime(3);
+      dbg(`at sign pip=${this.pipX},${this.pipY}: picker`);
+      this.posDirty = true;
+      this.savePos(true);
+      if (this.pickScene) this.game.scenes.go(this.pickScene());
+    } else if (!this.path.length && this.walkT === 0) {
+      dbg('sign out of reach');
+      this.pendingSign = false;
+    }
+  }
+
+  /** A heart bobs over the sign while it works, so a child sees it does something. */
+  private drawSignHeart(ctx: CanvasRenderingContext2D): void {
+    if (!this.signOn()) return;
+    const sg = this.A.sign!;
+    const bob = idiv(isin(this.game.frame * 2) * 2, 256);
+    const s = this.game.art.size('heart_big');
+    this.game.art.draw(ctx, 'heart_big', sg[0] - this.camX - (s.w >> 1), sg[1] - this.camY - 30 + bob);
+  }
+
   /** Walks to box i; it opens when Pip arrives (at once if he is touching it). */
   private goToBox(i: number): void {
     this.pendingBox = i;
+    this.pendingSign = false;
     if (this.touchBox === i) return;
     const [x, y] = this.spotXY(this.boxes[i].spot);
     this.walkTo(x, y + 8);
@@ -769,6 +824,7 @@ export class Meadow implements Scene {
       if (d <= this.zone(half) && d < bd) [best, bd] = [{ kind, i }, d];
     };
     consider('pip', 0, this.pipX, this.pipY - 12, 10);
+    if (this.signOn()) consider('sign', 0, this.A.sign![0], this.A.sign![1] - 10, 10);
     this.boxes.forEach((b, i) => {
       if (b.spot >= 0) consider('box', i, this.spotXY(b.spot)[0], this.spotXY(b.spot)[1] - 8, 8);
     });
@@ -814,6 +870,10 @@ export class Meadow implements Scene {
         this.goToBox(this.arrowBox);
         return;
       }
+      if (hit?.kind === 'sign') {
+        this.goToSign();
+        return;
+      }
       if (hit?.kind === 'follower' || hit?.kind === 'pen') {
         this.pokeFriend(hit.kind === 'follower' ? Poke.Follower : Poke.Pen, hit.i);
         return;
@@ -826,6 +886,7 @@ export class Meadow implements Scene {
         return;
       }
       this.pendingBox = -1;
+      this.pendingSign = false;
       this.walkTo(x, y);
       this.dragCell = Math.floor(y / this.A.cell) * this.A.cols + Math.floor(x / this.A.cell);
     } else if (t.kind === 'move') {
@@ -834,6 +895,7 @@ export class Meadow implements Scene {
         this.dragT = 0;
         this.dragCell = cell;
         this.pendingBox = -1;
+        this.pendingSign = false;
         this.walkTo(x, y);
       }
     }
@@ -881,6 +943,7 @@ export class Meadow implements Scene {
     this.savePos(false);
     this.updateCamera();
     if (!this.game.scenes.fading()) this.updateBoxes();
+    this.updateSign();
   }
 
   /** The glint mask in each of the area's 4 shimmer colors (made once the mask has loaded). */
@@ -1066,6 +1129,7 @@ export class Meadow implements Scene {
     this.world.sort((a, b) => a.depth - b.depth).forEach((w) => w.draw(ctx));
     this.ui.forEach((d) => d(ctx));
     if (overlay) ctx.drawImage(overlay, -cx, -cy);
+    this.drawSignHeart(ctx);
     this.drawArrow(ctx);
     this.drawCounter(ctx);
     drawButton(g, ctx, (bx, by) => g.art.draw(ctx, 'sq/bunny/strawberry/16/idle', bx - 8, by - 8), this.shelfPress / 8);

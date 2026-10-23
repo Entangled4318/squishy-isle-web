@@ -13,7 +13,9 @@ art pipeline.
 
 ## Status
 
-Planning. No game code yet. The plan will be in `docs/PLAN.md`.
+Planning. No game code yet. The agreed plan is in
+[docs/PLAN.md](docs/PLAN.md), and where the work is, in
+[docs/HANDOFF.md](docs/HANDOFF.md).
 
 ## Design rules
 
@@ -21,6 +23,14 @@ Planning. No game code yet. The plan will be in `docs/PLAN.md`.
 - No fail states, no timers, no reading needed.
 - A toddler mashing the screen must never lose progress.
 - Only a grown-up can start over.
+
+## Repository layout
+
+- `tools/` the Python art and music tools, copied from the GBA repo at
+  v1.6 (`1d99c2e`). See [tools/README.md](tools/README.md).
+- `tests/` checks. `check_map.py` checks the map data (Python 3, numpy,
+  Pillow): `python3 tests/check_map.py OUTDIR`.
+- `docs/` the plan and the handoff.
 
 ## License
 

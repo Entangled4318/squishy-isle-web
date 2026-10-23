@@ -10,7 +10,8 @@ Read `CLAUDE.md` and `docs/PLAN.md` first.
 | Repo setup | Done. `tools/` from GBA v1.6 (`1d99c2e`), `tests/check_map.py` (20 checks) |
 | M1. Foundations | Built; CI green. Waits for the owner: turn on Pages, then device checklist 1 |
 | M2. Art pipeline | Built. Waits for the owner: pick the squishy size (gallery page 1) |
-| M3. Music and sound | Next |
+| M3. Music and sound | Built. Waits for the owner: listen on the device (checklist 3) |
+| M4. Core loop in the meadow | Next, after the owner picks the squishy size |
 
 ## Owner notes
 
@@ -103,6 +104,45 @@ check pending).
 Score: art export 8.5 (first pass 8: the font had no `(`, `)`, `_`).
 Not done in M2: the `check_text.py` port moves to M4, when the game's
 strings move to TypeScript.
+
+## M3 progress
+
+1. **Sound chip** `src/audio/psg.ts`: the GBA's four PSG channels (squares
+   with duty and envelope, the 32-sample 4-bit wave with mute/100/75/50/25 %,
+   noise from the 15/7-bit shift register), positive levels summed at the
+   game's master volume 6/7, then a 20 Hz DC block (the output capacitor),
+   4 sub-steps a sample against aliasing. No browser API: tests render it
+   in Node.
+2. **Engine** `src/audio/engine.ts`: `sound.c` (v1.6) line for line, the
+   same register values each frame: songs with the lead's one-level fades,
+   attack, decay and release; the bass envelope; jingles (`TUNE_HELLO`,
+   `TUNE_POP`) that pause the song; the boing that borrows channel 2; the
+   squeak, hop, chime, blip, tick and pop; a looping song resumes where it
+   was left. Music tables round like `music.py`, effect macros truncate
+   like the C macros. `Renderer` runs one engine frame every 1/59.7275 s
+   of audio.
+3. **Worklet** `src/audio/worklet.ts` (10 KB, own bundle file, in the
+   offline cache): the engine on the audio thread, so music keeps time
+   whatever the game's frame rate. `src/engine/audio.ts` `Sound` sends
+   commands (queued until the worklet is ready) and gets the engine's log
+   lines back (`song start N`, `music loop N`, `song stop N`).
+4. **Sound test** `?sound`: the 8 songs (left) and the effects (right).
+5. **Tests** `tests/unit/audio.test.ts` (29): every lead and bass note of
+   the 8 songs within 25 cents (YIN, voice alone), exact tempo from the
+   loop log, the register writes of loop 2 equal loop 1, lead loudness of
+   loop 2 within 5 % of loop 1, the reveal song stops by itself, the lead
+   after a jingle at its own pitch (GBA 7.6), resume and the bass after
+   the boing, no clicks (2 ms smoothed step under 30 % of peak), effects
+   at least half the songs' peak and not clipping.
+   `tests/e2e/sound.spec.ts`: a real tap starts the worklet in Chromium,
+   a song starts and stops.
+
+Scores: engine port 9 (register-exact), sound chip 8.5 (pitch and tempo
+checked; the timbre still needs the owner's ear on a device). Trap: the
+loop check first failed from the test, not the engine (one-frame renders
+round 803.6 samples to 804 and drift; record inside `frameTick`). Lead
+and bass an octave or a fifth apart add up by phase, so loudness is
+compared per voice, as on the GBA.
 
 ## Commands
 

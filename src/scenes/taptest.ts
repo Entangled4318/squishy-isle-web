@@ -7,9 +7,6 @@ import { Scene } from '../engine/scenes';
 import { TouchEvt } from '../engine/input';
 import { dbg } from '../engine/log';
 
-/* C major pentatonic, like the GBA open screen's chimes */
-const NOTES = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51];
-
 export function standalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
@@ -34,7 +31,7 @@ export class TapTest implements Scene {
       const s = g.collection.s;
       s.squishes = (s.squishes + 1) >>> 0;
       g.collection.save();
-      g.sound.chime(NOTES[this.note++ % NOTES.length]);
+      g.sound.chime(this.note++ % 5); /* the GBA chime: C6 D6 E6 G6 A6 */
       this.bounce = 12;
       dbg(`tap ${s.squishes} at ${Math.round(t.x)},${Math.round(t.y)}`);
       if (s.squishes === 1 || s.squishes % 10 === 0) void g.chip.askPersist();

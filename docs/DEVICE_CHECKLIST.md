@@ -65,6 +65,24 @@ Address: https://entangled4318.github.io/squishy-isle-web/?gallery
 2. Tap the right side of the screen to go through all 26 pages. Note any
    art that looks wrong, blurry or cut off on the device.
 
-## Checklists 3 and later
+## Checklist 3 (milestone 3: music and sound)
 
-Added at the end of milestones 3 to 7.
+Address: https://entangled4318.github.io/squishy-isle-web/?sound
+
+The sound is the GBA game's own sound engine on an emulated GBA sound
+chip. If you know the songs from the Brick or mGBA, compare by ear.
+
+1. Tap "Meadow: Sleepy clover" on the left. It plays the slow waltz. Note
+   if it sounds like the GBA, and if anything clicks, buzzes or sounds
+   harsh on the iPhone and iPad speakers.
+2. Play each of the 8 songs for 20 seconds. Each song loops with no gap.
+3. With a song on, tap "jingle" on the right. The song pauses for the
+   jingle, then goes on with the right note.
+4. Tap chime, squeak (5 taps: each a little higher), boing, hop, pop.
+5. With a song on, lock the screen, then unlock and tap. The song comes
+   back.
+6. On the tap test page (the main address), each tap gives the GBA chime.
+
+## Checklists 4 and later
+
+Added at the end of milestones 4 to 7.

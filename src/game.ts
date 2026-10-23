@@ -11,8 +11,16 @@ import { Sound } from './engine/audio';
 import { Sparkles } from './engine/sparkles';
 import { BrowserChip } from './shell/storage';
 import { Art } from './engine/art';
+import type { SongData } from './audio/engine';
 
 export const BUILD = __BUILD__;
+
+/** The 8 songs from tools/music.py, in their index order. */
+async function loadSongs(): Promise<SongData[]> {
+  const r = await fetch('./gen/music.json');
+  const all = (await r.json()) as Record<string, SongData>;
+  return Object.values(all).sort((a, b) => a.index - b.index);
+}
 
 export class Game {
   frame = 0;
@@ -41,8 +49,9 @@ export class Game {
   }
 
   async boot(first: () => Scene): Promise<void> {
-    const [chip] = await Promise.all([BrowserChip.open(), this.art.load()]);
+    const [chip, songs] = await Promise.all([BrowserChip.open(), loadSongs(), this.art.load()]);
     this.chip = chip;
+    this.sound.setSongs(songs);
     this.store = new SaveStore(this.chip);
     const c = this.collection;
     const { status, data } = this.store.load();

@@ -11,7 +11,8 @@ type Driver = {
   touch(kind: string, x: number, y: number): void;
   log(): string[];
   save(): Record<string, unknown> & { squishes: number; boots: number };
-  view(): { w: number; h: number; k: number; portrait: boolean; devW: number; devH: number; ox: number; oy: number; dpr: number };
+  view(): { w: number; h: number; k: number; portrait: boolean; devW: number; devH: number; ox: number; oy: number; dpr: number; safe: { top: number; right: number; bottom: number; left: number } };
+  sound(): string;
   scene(): string;
   fading(): boolean;
   sparkles(): number;

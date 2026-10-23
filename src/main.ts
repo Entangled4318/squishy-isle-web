@@ -7,6 +7,7 @@ import { Screen } from './engine/screen';
 import { logLines, setLogEcho } from './engine/log';
 import { TapTest } from './scenes/taptest';
 import { Gallery } from './scenes/gallery';
+import { SoundTest } from './scenes/soundtest';
 import { isIOS, showInstallHint } from './shell/install-hint';
 import { standalone } from './scenes/taptest';
 import { encodeSave } from './rules/save-data';
@@ -31,7 +32,7 @@ declare global {
   }
 }
 
-const first = params.has('gallery') ? () => new Gallery(game) : () => new TapTest(game);
+const first = params.has('gallery') ? () => new Gallery(game) : params.has('sound') ? () => new SoundTest(game) : () => new TapTest(game);
 
 void game.boot(first).then(() => {
   if (!testMode) return;
@@ -51,5 +52,6 @@ void game.boot(first).then(() => {
     storage: () => ({ ...game.chip.report }),
     flush: () => game.chip.flush(),
     sound: () => game.sound.state(),
+    unlock: () => game.sound.unlock(),
   };
 });
